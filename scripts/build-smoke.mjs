@@ -29,4 +29,13 @@ await build({
   target: 'firefox140',
   outfile: resolve(root, 'build/history-checks.js'),
 });
-console.log('Built sidebar-checks.js, reading-checks.js and history-checks.js for Zotero Run JavaScript');
+await build({
+  entryPoints: [resolve(root, 'tests/zotero-settings.integration.ts')],
+  bundle: true,
+  format: 'iife',
+  globalName: 'AIReaderSettingsChecks',
+  platform: 'browser',
+  target: 'firefox140',
+  outfile: resolve(root, 'build/settings-checks.js'),
+});
+console.log('Built sidebar, reading, history and settings checks for Zotero Run JavaScript');

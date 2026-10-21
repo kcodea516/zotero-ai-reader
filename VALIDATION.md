@@ -4,6 +4,16 @@
 
 使用本机 macOS、Zotero 10.0.6 和 Translate for Zotero 2.4.8。1.0.0 的核心功能测试使用独立配置目录和测试文献；1.0.1 的原生控件检查在用户已安装插件的日常配置中进行。
 
+## 1.2.0 on-demand lookup and source layout
+
+TypeScript checks and all 81 automated tests passed on 2026-10-21. Coverage includes the separate routing request, current-paper-only decisions, explicit comparisons, no carryover of retrieved PDF text into a later ordinary question, disabled permissions, malformed routing output, cancellation, and preservation of current-paper evidence when lookup fails. Explicitly named papers are not padded with broadly related matches.
+
+The installed 1.2.0 passed all 147 native integration checks on macOS with Zotero 10.0.6: 48 sidebar, 38 reading, 36 history, and 25 settings checks. The reading fixture extracted the actual Nova PDF (14 pages supplied) and UnifiedServe PDF (3 of 16 pages supplied), then used simulated model responses for four rounds: current paper, explicit comparison, current paper again, and reading disabled. It mounted inside Zotero's actual item-details subtree and checked wrapped source-title height, page-number separation, and the 304-pixel width bound. Automated routing tests use simulated model decisions and do not measure real-model decision accuracy.
+
+The settings fixture used isolated in-memory configuration and fake endpoints. It checked collapsed endpoint cards, draft preservation, adding endpoints and models, custom color preview and save, immediate updates to mounted user messages, and reset without changing endpoint settings. It sent no network requests and did not read real keys or write the user's configuration.
+
+After installation, the existing conversation drafts matched their pre-update values. Geometry checks on the actual conversation showed all four historical source cards placed page labels below their wrapped titles; the sidebar measured about 308 pixels wide. The existing user message background was `rgb(234, 243, 255)`, matching the default light blue. Screenshots confirmed the light blue user bubble and collapsed endpoint summary in the actual settings page.
+
 ## 1.1.1 独立历史页
 
 2026-10-21，在 macOS Zotero 10.0.6 中安装 1.1.1，36 项历史页实机脚本检查通过：

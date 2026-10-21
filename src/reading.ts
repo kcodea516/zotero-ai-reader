@@ -86,9 +86,9 @@ export function rankPapers(current: PaperRecord, candidates: PaperRecord[], ques
   const currentTerms = terms(`${current.title} ${current.shortTitle || ''} ${current.abstract || ''}`);
   const collections = new Set(current.collectionKeys || []);
   const seen = new Set<string>();
-  return candidates.map(paper => {
+  const ranked = candidates.map(paper => {
     const identity = `${paper.libraryID}:${paper.itemKey}`;
-    if (identity === `${current.libraryID}:${current.itemKey}` || seen.has(identity)) return { paper, score: 0 };
+    if (identity === `${current.libraryID}:${current.itemKey}` || seen.has(identity)) return { paper, explicit: false, score: 0 };
     seen.add(identity);
     const identifiers = names(paper);
     const explicit = mentions(question, identifiers);
@@ -100,8 +100,12 @@ export function rankPapers(current: PaperRecord, candidates: PaperRecord[], ques
     const sharedTopic = overlap(currentTerms, metadataTerms);
     const sharedCollection = (paper.collectionKeys || []).some(key => collections.has(key));
     const relevant = explicit || inHistory || queryTitle >= 2 || queryMetadata >= 3 || (sharedCollection && sharedTopic >= 3);
-    return { paper, score: relevant ? (explicit ? 1000 : 0) + (inHistory ? 120 : 0) + queryTitle * 12 + queryMetadata * 3 + Math.min(sharedTopic, 8) * 2 + (sharedCollection ? 3 : 0) : 0 };
-  }).filter(result => result.score > 0)
+    return { paper, explicit, score: relevant ? (explicit ? 1000 : 0) + (inHistory ? 120 : 0) + queryTitle * 12 + queryMetadata * 3 + Math.min(sharedTopic, 8) * 2 + (sharedCollection ? 3 : 0) : 0 };
+  }).filter(result => result.score > 0);
+  // Naming another paper narrows the request; do not fill unused slots with
+  // broadly similar papers or papers mentioned only in earlier rounds.
+  const selected = ranked.some(result => result.explicit) ? ranked.filter(result => result.explicit) : ranked;
+  return selected
     .sort((a, b) => b.score - a.score || a.paper.title.localeCompare(b.paper.title))
     .slice(0, 3).map(result => result.paper);
 }

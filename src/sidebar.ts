@@ -1,5 +1,6 @@
 import type { Conversation, Host, Message, PaperScope, Quote } from './types.ts';
 import { renderMarkdown } from './render.ts';
+import { normalizeUserMessageColor, getUserMessageTextColor } from './appearance.ts';
 import { nativeButton, nativeEditable, nativeSelect, nativeTooltip, multilineKeys, setNativeOptions, type NativeButton, type NativeOption } from './controls.ts';
 
 const XHTML = 'http://www.w3.org/1999/xhtml';
@@ -58,10 +59,10 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   currentLabel.append(currentCheck, doc.createTextNode('读取原文'));
   currentLabel.title = '发送问题时自动读取当前论文的本地 PDF 原文。';
   const relatedLabel = el('label'); const relatedCheck = el('input'); relatedCheck.type = 'checkbox';
-  relatedLabel.append(relatedCheck, doc.createTextNode('联查文库'));
-  relatedLabel.title = '按问题检索同一文库中的相关论文，读取可用的本地 PDF 片段。';
+  relatedLabel.append(relatedCheck, doc.createTextNode('按需查文库'));
+  relatedLabel.title = '仅在问题需要比较其他文献或补充依据时，检索同一 Zotero 文库（不限当前分组）中的原文。';
   readingOptions.append(currentLabel, relatedLabel);
-  const readingHint = el('div', 'zar-muted zar-reading-hint', '原文与相关片段会随问题发送到所选接口。');
+  const readingHint = el('div', 'zar-muted zar-reading-hint', '自动读取当前论文；需要时查询文库。原文片段会发送到所选 AI 接口。');
   paper.append(paperLabel, paperTitle, returnButton, readingOptions, readingHint);
   const history = el('div', 'zar-history');
   history.setAttribute('role', 'region'); history.setAttribute('aria-label', '历史对话');
@@ -326,13 +327,15 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       if (message.sources?.length) {
         entry.sources.append(el('summary', '', `本轮原文来源 · ${message.sources.length} 篇`));
         for (const source of message.sources) {
+          const sourceItem = el('div', 'zar-source-item');
           const sourceButton = el('button', 'zar-source-link'); sourceButton.type = 'button';
           sourceButton.textContent = `${source.id} · ${source.title}`;
           sourceButton.title = `打开原文，PDF 第 ${source.pages[0]} 页`;
           sourceButton.addEventListener('click', () => host.openSource?.(source, source.pages[0]));
           const pages = source.pages.length > 8 ? `${source.pages.slice(0, 8).join('、')}…` : source.pages.join('、');
           const description = el('div', 'zar-source-pages', `PDF 页码：${pages}${source.truncated ? ' · 按问题摘取的片段' : ''}`);
-          entry.sources.append(sourceButton, description);
+          sourceItem.append(sourceButton, description);
+          entry.sources.append(sourceItem);
         }
       }
       entry.error.textContent = [statusLabel(message.status), message.error].filter(Boolean).join(' · ');
@@ -342,6 +345,9 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   }
   function render(): void {
     if (destroyed) return;
+    const userMessageColor = normalizeUserMessageColor(host.service.getConfig().appearance?.userMessageColor);
+    root.style.setProperty('--zar-user-message-bg', userMessageColor);
+    root.style.setProperty('--zar-user-message-fg', getUserMessageTextColor(userMessageColor));
     let value = current();
     if (!value) { value = host.service.forScope(scope); conversationId = value.id; }
     root.dataset.view = historyOpen ? 'history' : 'chat';

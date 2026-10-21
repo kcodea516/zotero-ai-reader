@@ -1,4 +1,14 @@
-# 更新记录
+# Changelog
+
+## 1.2.0
+
+- Replace automatic related-paper attachment with on-demand library lookup. Enabling the option permits a model routing decision; other papers are read only when that decision calls for a search.
+- Instruct the router to keep ordinary explanations and translations on the current paper. Do not automatically resend previously retrieved PDF text on subsequent ordinary questions. When explicitly named papers match, return those matches without adding broad topic matches to fill unused slots.
+- Clarify that lookup covers the same Zotero library, including papers outside the current collection. Failed routing skips lookup while preserving available current-paper evidence.
+- Give each source its own block. Reset native fixed button heights so long titles wrap above their page numbers without overlap.
+- Collapse existing endpoint settings into summary cards, keep new endpoints open for editing, and preserve model and key drafts when toggling cards.
+- Add a light blue default for user messages, a color picker and hex input, a contrast preview, and a reset-to-default action.
+- Publish an English README and English release notes. The Zotero interface remains in Chinese.
 
 ## 1.1.1
 

@@ -1,6 +1,7 @@
 import type { Config, EndpointConfig, Host, ModelConfig } from './types.ts';
 import { chatCompletion, normalizeEndpoint } from './transport.ts';
 import { nativeButton, nativeEditable, nativeSelect, nativeTooltip, multilineKeys, setNativeOptions, type NativeButton, type NativeSelect, type NativeEditable, type NativeOption } from './controls.ts';
+import { DEFAULT_USER_MESSAGE_COLOR, normalizeUserMessageColor, getUserMessageTextColor } from './appearance.ts';
 
 const XHTML = 'http://www.w3.org/1999/xhtml';
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
@@ -19,8 +20,10 @@ export function mountSettings(container: HTMLElement, host: Host): () => void {
   let testing = false;
   let testController: AbortController | undefined;
   let statusText = '';
+  let colorDraft = normalizeUserMessageColor(config.appearance?.userMessageColor);
   const keyDrafts = new Map<string, string>();
   const clearKeys = new Set<string>();
+  const openEndpoints = new Set<string>();
   const root = el('div', 'zar-root zar-settings-root');
   const content = el('div', 'zar-settings'); root.append(content); container.append(root);
   let status: HTMLElement;
@@ -69,9 +72,11 @@ export function mountSettings(container: HTMLElement, host: Host): () => void {
     setNativeOptions(defaultSelect, options, config.defaultModelId);
   }
   function renderModel(model: ModelConfig): HTMLElement {
-    const section = el('div', 'zar-model-editor'); const fields = el('div', 'zar-inline-fields');
+    const section = el('div', 'zar-model-editor'); section.dataset.modelId = model.id;
+    const fields = el('div', 'zar-inline-fields');
     const name = textInput('模型显示名称', model.name, value => { model.name = value; refreshModels(); }, '例如：阅读模型');
     const modelID = textInput('实际 model ID', model.model, value => { model.model = value; refreshModels(); }, '由 API 服务提供');
+    name.input.className = 'zar-model-name-input'; modelID.input.className = 'zar-model-id-input';
     fields.append(name.field, modelID.field);
     section.append(fields, button('删除此模型', () => {
       config.models = config.models.filter(value => value.id !== model.id); dirty = true; render();
@@ -79,12 +84,36 @@ export function mountSettings(container: HTMLElement, host: Host): () => void {
     return section;
   }
   function renderEndpoint(endpoint: EndpointConfig, index: number): HTMLElement {
-    const fieldset = el('fieldset', 'zar-endpoint'); fieldset.append(el('legend', '', `接口 ${index + 1}`));
-    const name = textInput('接口名称', endpoint.name, value => { endpoint.name = value; refreshModels(); }, '例如：我的 API');
-    const url = textInput('Base URL 或完整 Chat Completions 地址', endpoint.baseURL, value => { endpoint.baseURL = value; }, 'https://api.example.com/v1'); url.input.type = 'url';
+    const details = el('details', 'zar-endpoint'); details.dataset.endpointId = endpoint.id;
+    details.open = openEndpoints.has(endpoint.id);
+    const summary = el('summary', 'zar-endpoint-summary');
+    const title = el('span', 'zar-endpoint-name');
+    const meta = el('span', 'zar-endpoint-meta');
+    const indicator = el('span', 'zar-endpoint-indicator'); indicator.setAttribute('aria-hidden', 'true');
+    const labels = el('span', 'zar-endpoint-summary-text'); labels.append(title, meta);
+    summary.append(labels, indicator);
+    const updateSummary = () => {
+      let address = '未设置有效地址';
+      try { address = new URL(endpoint.baseURL).host || address; } catch { /* Do not expose arbitrary URL text or credentials in the summary. */ }
+      title.textContent = endpoint.name.trim() || `接口 ${index + 1}`;
+      meta.textContent = `${address} · ${config.models.filter(value => value.endpointId === endpoint.id).length} 个模型`;
+      indicator.textContent = details.open ? '收起' : '展开';
+    };
+    details.addEventListener('toggle', () => {
+      if (!details.isConnected) return;
+      if (details.open) openEndpoints.add(endpoint.id); else openEndpoints.delete(endpoint.id);
+      updateSummary();
+    });
+    updateSummary();
+    const body = el('div', 'zar-endpoint-body');
+    const name = textInput('接口名称', endpoint.name, value => { endpoint.name = value; updateSummary(); refreshModels(); }, '例如：我的 API');
+    name.input.className = 'zar-endpoint-name-input';
+    const url = textInput('Base URL 或完整 Chat Completions 地址', endpoint.baseURL, value => { endpoint.baseURL = value; updateSummary(); }, 'https://api.example.com/v1'); url.input.type = 'url';
+    url.input.className = 'zar-endpoint-url-input';
     const key = textInput('API Key', keyDrafts.get(endpoint.id) || '', value => {
       keyDrafts.set(endpoint.id, value); if (value) clearKeys.delete(endpoint.id); keyNote.textContent = '留空会保留已有密钥。密钥不会显示在历史记录中。';
     }, clearKeys.has(endpoint.id) ? '保存后清除已有密钥' : '留空则保留已有密钥', 'password');
+    key.input.className = 'zar-endpoint-key-input';
     key.input.autocomplete = 'new-password';
     const keyNote = el('div', 'zar-muted', clearKeys.has(endpoint.id) ? '保存后将清除此接口的密钥。' : '留空会保留已有密钥。密钥不会显示在历史记录中。');
     const clear = button('清除此接口的密钥', () => {
@@ -99,27 +128,73 @@ export function mountSettings(container: HTMLElement, host: Host): () => void {
     const actions = el('div', 'zar-settings-actions');
     actions.append(button('添加模型', () => {
       const next: ModelConfig = { id: id('model'), endpointId: endpoint.id, name: '', model: '' };
-      config.models.push(next); if (!config.defaultModelId) config.defaultModelId = next.id; dirty = true; render();
+      config.models.push(next); if (!config.defaultModelId) config.defaultModelId = next.id;
+      dirty = true; render(endpoint.id);
+      const added = Array.from(content.querySelectorAll<HTMLElement>('.zar-model-editor')).find(value => value.dataset.modelId === next.id);
+      added?.querySelector<HTMLInputElement>('.zar-model-name-input')?.focus();
     }), button('删除接口', () => {
       if (!win.confirm(`删除“${endpoint.name || '此接口'}”及其模型配置吗？已有对话仍会保留。`)) return;
       config.endpoints = config.endpoints.filter(value => value.id !== endpoint.id);
       config.models = config.models.filter(value => value.endpointId !== endpoint.id);
-      keyDrafts.delete(endpoint.id); clearKeys.delete(endpoint.id); dirty = true; render();
+      keyDrafts.delete(endpoint.id); clearKeys.delete(endpoint.id); openEndpoints.delete(endpoint.id); dirty = true; render();
     }));
-    fieldset.append(name.field, url.field, key.field, keyNote, clear, streamLabel, models, actions);
-    return fieldset;
+    body.append(name.field, url.field, key.field, keyNote, clear, streamLabel, models, actions);
+    details.append(summary, body);
+    return details;
   }
-  function render(): void {
+  function renderAppearance(): HTMLElement {
+    const appearance = el('fieldset', 'zar-appearance-settings'); appearance.append(el('legend', '', '对话外观'));
+    const colorLabel = el('label', 'zar-field'); const color = el('input', 'zar-user-message-color');
+    color.type = 'color'; color.value = normalizeUserMessageColor(colorDraft);
+    color.setAttribute('aria-label', '我的消息气泡颜色'); editableControls.push(color);
+    colorLabel.append(el('span', '', '我的消息气泡颜色'), color);
+    const preview = el('div', 'zar-color-preview-user', '请解释这篇论文的核心机制。');
+    preview.setAttribute('aria-label', '我的消息气泡预览');
+    const showPreview = (value: string) => {
+      preview.style.backgroundColor = value;
+      preview.style.color = getUserMessageTextColor(value);
+    };
+    showPreview(color.value);
+    const hex = textInput('颜色值', colorDraft, value => {
+      colorDraft = value;
+      if (/^#[0-9a-fA-F]{6}$/.test(value.trim())) {
+        const normalized = normalizeUserMessageColor(value.trim());
+        config.appearance = { userMessageColor: normalized }; color.value = normalized; showPreview(normalized);
+      }
+    }, '#eaf3ff');
+    hex.input.className = 'zar-user-message-color-value'; hex.input.pattern = '#[0-9a-fA-F]{6}';
+    const setColor = (value: string) => {
+      const normalized = normalizeUserMessageColor(value);
+      colorDraft = normalized; config.appearance = { userMessageColor: normalized };
+      color.value = normalized; hex.input.value = normalized; showPreview(normalized); markDirty();
+    };
+    color.addEventListener('input', () => setColor(color.value));
+    color.addEventListener('change', () => setColor(color.value));
+    const controls = el('div', 'zar-color-controls zar-appearance-controls'); controls.append(colorLabel, hex.field);
+    const reset = button('恢复默认颜色', () => setColor(DEFAULT_USER_MESSAGE_COLOR), 'zar-text-button zar-reset-user-message-color');
+    appearance.append(controls, preview, reset, el('p', 'zar-muted', '默认使用浅蓝色。预览仅在此处显示，保存设置后应用到对话；恢复颜色不会改动接口或模型。'));
+    return appearance;
+  }
+  function render(expandEndpointId?: string): void {
+    for (const card of content.querySelectorAll<HTMLDetailsElement>('details.zar-endpoint')) {
+      if (card.open) openEndpoints.add(card.dataset.endpointId!); else openEndpoints.delete(card.dataset.endpointId!);
+    }
+    for (const endpointId of openEndpoints) if (!config.endpoints.some(value => value.id === endpointId)) openEndpoints.delete(endpointId);
+    if (expandEndpointId) openEndpoints.add(expandEndpointId);
     editableControls.length = 0; content.replaceChildren();
-    content.append(el('h1', '', 'AI 阅读助手设置'), el('p', 'zar-settings-tip', '添加兼容 OpenAI Chat Completions 的接口，再配置可切换的模型。提问时会将该会话的已完成对话和本次引用发送给所选接口。'));
+    content.append(el('h1', '', 'AI 阅读助手设置'), el('p', 'zar-settings-tip', '添加兼容 OpenAI Chat Completions 的接口，再配置可切换的模型。提问时会将已完成对话、本次引用和启用的原文发送到所选接口；允许按需联查后，仅在问题需要时检索其他论文。'));
     const endpoints = el('div'); config.endpoints.forEach((endpoint, index) => endpoints.append(renderEndpoint(endpoint, index)));
-    content.append(endpoints, button('添加接口', () => {
+    const endpointHeading = el('div', 'zar-settings-heading'); endpointHeading.append(el('h2', '', '接口与模型'), button('添加接口', () => {
       const nextEndpoint = { id: id('endpoint'), name: '', baseURL: '', stream: true };
       config.endpoints.push(nextEndpoint);
       const nextModel = { id: id('model'), endpointId: nextEndpoint.id, name: '', model: '' };
       config.models.push(nextModel); if (!config.defaultModelId) config.defaultModelId = nextModel.id;
-      dirty = true; render();
+      dirty = true; render(nextEndpoint.id);
+      const added = Array.from(content.querySelectorAll<HTMLDetailsElement>('details.zar-endpoint')).find(value => value.dataset.endpointId === nextEndpoint.id);
+      added?.querySelector<HTMLInputElement>('.zar-endpoint-name-input')?.focus();
     }));
+    content.append(endpointHeading, endpoints);
+    if (!config.endpoints.length) endpoints.append(el('p', 'zar-muted', '还没有接口。点击“添加接口”开始配置。'));
     const defaults = el('fieldset'); defaults.append(el('legend', '', '对话默认设置'));
     const defaultLabel = el('label', 'zar-field'); defaultSelect = nativeSelect(doc, 'zar-default-model', '默认模型'); editableControls.push(defaultSelect);
     defaultLabel.append(el('span', '', '默认模型'), defaultSelect); refreshModels();
@@ -135,15 +210,18 @@ export function mountSettings(container: HTMLElement, host: Host): () => void {
     dirtyIndicator = el('span', 'zar-saved-state');
     const reset = button('放弃未保存更改', () => {
       if (dirty && !win.confirm('放弃所有未保存的配置更改吗？')) return;
-      config = clone(host.service.getConfig()); keyDrafts.clear(); clearKeys.clear(); dirty = false; statusText = ''; render();
+      config = clone(host.service.getConfig()); colorDraft = normalizeUserMessageColor(config.appearance?.userMessageColor);
+      keyDrafts.clear(); clearKeys.clear(); dirty = false; statusText = ''; render();
     });
     actions.append(saveButton, testButton, reset, dirtyIndicator);
     status = el('div', 'zar-status'); status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
     const stop = nativeButton(doc, '停止测试', () => testController?.abort()); stop.hidden = !testing;
-    content.append(defaults, actions, status, stop, el('p', 'zar-settings-tip', '对话历史仅保存在本机。API Key 使用本机安全存储；若无法持久保存，插件会明确提示仅本次运行有效。测试只在点击按钮后发送，不会加入对话历史。'));
+    content.append(defaults, renderAppearance(), actions, status, stop, el('p', 'zar-settings-tip', '对话历史仅保存在本机。API Key 使用本机安全存储；若无法持久保存，插件会明确提示仅本次运行有效。测试只在点击按钮后发送，不会加入对话历史。'));
     updateState();
   }
   function validate(): void {
+    if (!/^#[0-9a-fA-F]{6}$/.test(colorDraft.trim())) throw new Error('请填写有效的颜色值，例如 #eaf3ff。');
+    colorDraft = normalizeUserMessageColor(colorDraft.trim()); config.appearance = { userMessageColor: colorDraft };
     for (const endpoint of config.endpoints) {
       endpoint.name = endpoint.name.trim(); endpoint.baseURL = endpoint.baseURL.trim();
       if (!endpoint.name) throw new Error('请填写每个接口的名称。');

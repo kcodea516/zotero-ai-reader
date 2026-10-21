@@ -4,8 +4,8 @@ import { createZoteroPaperContextProvider } from '../src/zotero-reading.ts';
 import type { NativeEditable } from '../src/controls.ts';
 import type { ChatRequest, Config, Host, PaperContextProvider, PaperScope, PaperSource, SecretStore, StoreState } from '../src/types.ts';
 
-/** Uses actual local PDF extraction with a strictly in-memory conversation and
- * fake transport. Never reads credentials, sends requests, or saves profile data. */
+/** Actual local PDF extraction and native pane styling, isolated in-memory chat,
+ * and fake planner/answer transports. No credentials, API, or profile writes. */
 export async function runReadingChecks(win: Window): Promise<{
   checks: string[];
   sources: { title: string; totalPages: number; suppliedPages: number }[];
@@ -33,16 +33,15 @@ export async function runReadingChecks(win: Window): Promise<{
   await Zotero.Items.loadDataTypes([item], ['itemData']);
   const scope: PaperScope = { libraryID: item.libraryID, itemKey: item.key, title: item.getField('title') };
   const provider = createZoteroPaperContextProvider();
-  const question = '解释System Overview的四个组成部分，并与UnifiedServe的机制联系起来';
-  const context = await provider({ scope, question, previousQuestions: [], options: { currentPaper: true, relatedPapers: true }, signal: new AbortController().signal });
+  const question = '解释System Overview的四个组成部分。';
+  const context = await provider({ scope, question, previousQuestions: [], options: { currentPaper: true, relatedPapers: false }, signal: new AbortController().signal });
   const payload = context.text ? JSON.parse(context.text) : undefined;
   const current = context.sources.find(source => source.id === 'S1');
-  check('current local PDF source exists', !!current && current.itemKey === scope.itemKey && current.pages.length > 0);
-  check('all original sources use physical pages within bounds', context.sources.every(source => source.pages.length > 0 && source.pages.every(page => Number.isInteger(page) && page >= 1 && page <= source.totalPages)));
+  check('current local PDF source exists without automatic related lookup', !!current && current.itemKey === scope.itemKey && current.pages.length > 0 && context.sources.length === 1);
+  check('current original uses physical pages within bounds', context.sources.every(source => source.pages.every(page => Number.isInteger(page) && page >= 1 && page <= source.totalPages)));
   const sourceDocuments: any[] = payload?.documents || [];
   const normalizedOriginal = sourceDocuments.flatMap(document => document.passages.map((passage: any) => passage.text)).join(' ').replace(/\s+/g, ' ').toLowerCase();
   check('retrieved real PDF contains System Overview section', normalizedOriginal.includes('system overview'));
-  check('explicit UnifiedServe comparison retrieves another local original', context.sources.some(source => source.id !== 'S1' && /UnifiedServe|Enabling Disaggregated Multi-Stage MLLM/i.test(source.title)));
   if (/^Nova:/i.test(scope.title)) check('Nova full extraction has 14 physical PDF pages', current?.totalPages === 14 && current.pages.length === 14);
   const originalFragment = String(sourceDocuments.find(document => document.source.id === 'S1')?.passages[0]?.text || '').slice(80, 230);
   check('real original passage is available for storage isolation assertion', originalFragment.length > 100);
@@ -51,8 +50,16 @@ export async function runReadingChecks(win: Window): Promise<{
   let saved: StoreState | null = null;
   const requests: Array<ChatRequest['messages']> = [];
   const opened: { source: PaperSource; page?: number }[] = [];
-  let providerCalls = 0;
-  const wrappedProvider: PaperContextProvider = async request => { providerCalls++; return await provider(request); };
+  const providerOptions: { currentPaper: boolean; relatedPapers: boolean }[] = [];
+  let plannerCalls = 0;
+  const wrappedProvider: PaperContextProvider = async request => {
+    providerOptions.push({ ...request.options });
+    return await provider(request);
+  };
+  const materialFrom = (messages: ChatRequest['messages']): any | undefined => {
+    const match = /<retrieved_paper_context>\s*([\s\S]*?)\s*<\/retrieved_paper_context>/.exec(messages.at(-1)?.content || '');
+    return match ? JSON.parse(match[1]) : undefined;
+  };
   const secrets: SecretStore = { async get() { return 'integration-placeholder'; }, async set() { return true; }, async delete() {} };
   const config: Config = {
     version: 1,
@@ -64,14 +71,18 @@ export async function runReadingChecks(win: Window): Promise<{
     async load() { return saved; },
     async save(value) { saved = JSON.parse(JSON.stringify(value)) as StoreState; },
   }, secrets, async request => {
+    if (request.messages.some(message => message.role === 'system' && message.content.includes('zotero-library-lookup-decision'))) {
+      plannerCalls++;
+      request.onText(JSON.stringify({ lookup: plannerCalls === 2, query: plannerCalls === 2 ? 'UnifiedServe vision encode decode GPU sharing' : '' }));
+      return {};
+    }
     requests.push(request.messages.map(message => ({ ...message })));
-    const material = /<retrieved_paper_context>\s*([\s\S]*?)\s*<\/retrieved_paper_context>/.exec(request.messages.at(-1)?.content || '');
+    const material = materialFrom(request.messages);
     if (material) {
-      const data = JSON.parse(material[1]);
-      const sources: PaperSource[] = data.documents.map((document: any) => document.source);
+      const sources: PaperSource[] = material.documents.map((document: any) => document.source);
       const primary = sources.find(source => source.id === 'S1')!;
-      const secondary = sources.find(source => source.id !== 'S1')!;
-      request.onText(`Synthetic local reading response ${requests.length}. Current original [S1 p.${primary.pages[0]}]. Related original [${secondary.id} p.${secondary.pages[0]}]. Invalid page stays plain [S1 p.${primary.totalPages + 12345}].`);
+      const secondary = sources.find(source => source.id !== 'S1');
+      request.onText(`Synthetic local reading response ${requests.length}. Current original [S1 p.${primary.pages[0]}].${secondary ? ` Related original [${secondary.id} p.${secondary.pages[0]}].` : ''} Invalid page stays plain [S1 p.${primary.totalPages + 12345}].`);
     } else request.onText('Synthetic response with original reading disabled.');
     return {};
   }, wrappedProvider);
@@ -86,7 +97,13 @@ export async function runReadingChecks(win: Window): Promise<{
   };
   try {
     await service.init(); await service.saveConfig(config);
-    doc.documentElement.append(overlay);
+    const selectedDetails = doc.querySelector<HTMLElement>('item-details.deck-selected');
+    const activeDetails = selectedDetails && selectedDetails.getBoundingClientRect().width > 0 ? selectedDetails
+      : Array.from(doc.querySelectorAll<HTMLElement>('item-details')).find(element => {
+        const rect = element.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && win.getComputedStyle(element).visibility !== 'hidden';
+      });
+    (activeDetails || doc.documentElement).append(overlay);
     panel = mountSidebar(overlay, scope, host); await pause();
     const find = <T extends Element>(selector: string): T => {
       const element = overlay.querySelector(selector);
@@ -107,39 +124,65 @@ export async function runReadingChecks(win: Window): Promise<{
       check(`round ${expected}: assistant completes`, conversation.messages.at(-1)?.status === 'complete');
     };
     check('reading fixture is 304px wide', Math.abs(overlay.getBoundingClientRect().width - 304) < 1);
+    check('source fixture inherits actual Zotero item-details control styling', !!activeDetails && overlay.closest('item-details') === activeDetails);
+    const options = find<HTMLElement>('.zar-reading-options');
+    check('lookup option explains whole-library scope and on-demand use', options.textContent?.includes('按需查文库') && Array.from(options.querySelectorAll('label')).some(label => label.title.includes('不限当前分组') && label.title.includes('仅在问题需要')));
     await send(question, 1);
-    check('first request receives real original context in last user message', requests[0].at(-1)?.role === 'user' && requests[0].at(-1)!.content.includes('<retrieved_paper_context>') && requests[0].at(-1)!.content.includes('zotero-local-paper-evidence') && requests[0].at(-1)!.content.includes(encodedFragment));
+    const firstMaterial = materialFrom(requests[0]);
+    check('ordinary first request contains real current original only', firstMaterial?.documents.length === 1 && firstMaterial.documents[0].source.id === 'S1' && requests[0].at(-1)!.content.includes(encodedFragment));
+    check('ordinary first question does not request related PDF extraction', plannerCalls === 1 && providerOptions.length === 1 && !providerOptions[0].relatedPapers);
     const firstAssistant = find<HTMLElement>('.zar-message-assistant');
-    const sourcePanel = firstAssistant.querySelector<HTMLDetailsElement>('.zar-message-sources');
-    check('current and related original sources appear in response UI', !!sourcePanel && !sourcePanel.hidden && sourcePanel.querySelectorAll('.zar-source-link').length >= 2);
-    const citations = Array.from(firstAssistant.querySelectorAll<HTMLAnchorElement>('.zar-markdown a'));
-    check('only two valid page citations become clickable', citations.length === 2 && citations.every(anchor => anchor.getAttribute('href') === '#'));
     const firstSource = conversation.messages[1].sources!.find(source => source.id === 'S1')!;
-    citations[0].click();
+    const firstCitations = Array.from(firstAssistant.querySelectorAll<HTMLAnchorElement>('.zar-markdown a'));
+    check('valid current citation is clickable and invalid physical page stays plain', firstCitations.length === 1 && firstCitations[0].getAttribute('href') === '#' && firstAssistant.querySelector('.zar-markdown')?.textContent?.includes(`[S1 p.${firstSource.totalPages + 12345}]`));
+    firstCitations[0].click();
     check('citation opens exact original attachment and cited physical page', opened.length === 1 && opened[0].source.attachmentKey === firstSource.attachmentKey && opened[0].source.itemKey === scope.itemKey && opened[0].page === firstSource.pages[0]);
-    check('invalid physical PDF page remains non-clickable text', firstAssistant.querySelector('.zar-markdown')?.textContent?.includes(`[S1 p.${firstSource.totalPages + 12345}]`) && !citations.some(anchor => anchor.textContent?.includes(String(firstSource.totalPages + 12345))));
-    await send('继续解释这四点之间的关系，并继续对照UnifiedServe。', 2);
-    check('second round preserves prior exchange while reattaching current originals', requests[1].filter(message => message.role === 'user').length === 2 && requests[1].at(-1)!.content.includes('<retrieved_paper_context>') && conversation.messages[3].sources!.some(source => source.id === 'S1'));
+
+    await send('请把Nova与UnifiedServe处理视觉编码干扰decode的机制作对照。', 2);
+    const comparisonMaterial = materialFrom(requests[1]);
+    const comparisonSources: PaperSource[] = comparisonMaterial?.documents.map((document: any) => document.source) || [];
+    check('explicit comparison triggers planner and reads another local original', plannerCalls === 2 && providerOptions.some(option => option.relatedPapers) && comparisonSources.some(source => source.id !== 'S1' && /UnifiedServe|Enabling Disaggregated Multi-Stage MLLM/i.test(source.title)));
+    check('second round preserves prior exchange and original sources', requests[1].filter(message => message.role === 'user').length === 2 && conversation.messages[3].sources!.some(source => source.id === 'S1'));
+    const comparisonAssistant = Array.from(overlay.querySelectorAll<HTMLElement>('.zar-message-assistant'))[1];
+    const sourcePanel = comparisonAssistant.querySelector<HTMLDetailsElement>('.zar-message-sources')!;
+    check('comparison response displays independent source cards', !!sourcePanel && !sourcePanel.hidden && sourcePanel.querySelectorAll('.zar-source-item').length === comparisonSources.length && comparisonSources.length >= 2);
+    sourcePanel.open = true; await pause();
+    for (const sourceItem of Array.from(sourcePanel.querySelectorAll<HTMLElement>('.zar-source-item'))) {
+      const button = sourceItem.querySelector<HTMLButtonElement>('.zar-source-link')!;
+      const pages = sourceItem.querySelector<HTMLElement>('.zar-source-pages')!;
+      const buttonRect = button.getBoundingClientRect(); const pagesRect = pages.getBoundingClientRect();
+      const textRange = doc.createRange(); textRange.selectNodeContents(button);
+      const textRect = textRange.getBoundingClientRect();
+      check('source title button contains all wrapped text under native pane styles', buttonRect.height >= textRect.height - 1 && button.scrollHeight <= button.clientHeight + 1 && (button.textContent!.length < 80 || buttonRect.height > 30));
+      check('source page numbers appear below title without overlap', pagesRect.top >= buttonRect.bottom + 3 && sourceItem.getBoundingClientRect().bottom >= pagesRect.bottom - 1);
+      check('source card stays within 304px width', sourceItem.scrollWidth <= sourceItem.clientWidth + 1 && button.scrollWidth <= button.clientWidth + 1);
+    }
+    const comparedOriginal = comparisonMaterial.documents.find((document: any) => document.source.id !== 'S1');
+    const relatedFragment = JSON.stringify(String(comparedOriginal.passages[0].text).slice(100, 250)).slice(1, -1);
     check('second round keeps original input available', draft.isConnected && draft.ref === input);
-    const root = find<HTMLElement>('.zar-sidebar');
-    const frame = find<HTMLElement>('.zar-input-frame');
+
+    await send('只解释当前论文的 System Overview，不需要比较其他论文。', 3);
+    const thirdMaterial = materialFrom(requests[2]);
+    check('later ordinary question returns to current original only', plannerCalls === 3 && thirdMaterial?.documents.length === 1 && thirdMaterial.documents[0].source.id === 'S1' && conversation.messages[5].sources?.length === 1);
+    check('previous comparison does not resend unrelated original corpus', requests[2].every(message => !message.content.includes(relatedFragment)));
+    const root = find<HTMLElement>('.zar-sidebar'); const frame = find<HTMLElement>('.zar-input-frame');
     const outer = root.getBoundingClientRect(); const inner = frame.getBoundingClientRect();
-    check('composer remains visible in 304px sidebar', inner.width > 0 && inner.top >= outer.top && inner.bottom <= outer.bottom + 1 && root.scrollWidth <= root.clientWidth + 1);
+    check('composer remains visible and sidebar does not exceed 304px', inner.width > 0 && inner.top >= outer.top && inner.bottom <= outer.bottom + 1 && root.scrollWidth <= root.clientWidth + 1 && outer.width <= overlay.getBoundingClientRect().width + 1);
     const optionChecks = Array.from(overlay.querySelectorAll<HTMLInputElement>('.zar-reading-options input[type="checkbox"]'));
-    check('two independent original reading controls are available', optionChecks.length === 2 && optionChecks.every(checkbox => checkbox.checked && !checkbox.disabled));
+    check('two independent reading permissions remain available', optionChecks.length === 2 && optionChecks.every(checkbox => checkbox.checked && !checkbox.disabled));
     for (const checkbox of optionChecks) {
       checkbox.checked = false;
       checkbox.dispatchEvent(new realm.Event('change', { bubbles: true }));
     }
-    await pause();
-    const previousCalls = providerCalls;
-    await send('关闭原文后只继续讨论刚才的对话。', 3);
-    check('checkbox opt-out skips provider on next request', providerCalls === previousCalls);
-    check('opt-out API body contains no original corpus', requests[2].every(message => !message.content.includes('<retrieved_paper_context>') && !message.content.includes('zotero-local-paper-evidence') && !message.content.includes(encodedFragment)));
-    await service.flush();
-    const stored = JSON.stringify(saved);
-    check('conversation state stores source metadata but no retrieved original corpus', stored.includes('attachmentKey') && !stored.includes('zotero-local-paper-evidence') && !stored.includes('retrieved_paper_context') && !stored.includes(encodedFragment));
-    return { checks, sources: context.sources.map(source => ({ title: source.title, totalPages: source.totalPages, suppliedPages: source.pages.length })) };
+    await pause(); const previousCalls = providerOptions.length; const previousPlannerCalls = plannerCalls;
+    await send('关闭原文后只继续讨论刚才的对话。', 4);
+    check('opt-out skips both PDF provider and lookup planner', providerOptions.length === previousCalls && plannerCalls === previousPlannerCalls);
+    check('opt-out API body contains no original corpus', requests[3].every(message => !message.content.includes('<retrieved_paper_context>') && !message.content.includes('zotero-local-paper-evidence') && !message.content.includes(encodedFragment) && !message.content.includes(relatedFragment)));
+    check('planner decisions never appear as assistant answers', conversation.messages.filter(message => message.role === 'assistant').length === 4 && conversation.messages.filter(message => message.role === 'assistant').every(message => !message.content.includes('"lookup"')));
+    await service.flush(); const stored = JSON.stringify(saved);
+    check('conversation state stores source metadata but no retrieved original corpus', stored.includes('attachmentKey') && !stored.includes('zotero-local-paper-evidence') && !stored.includes('retrieved_paper_context') && !stored.includes(encodedFragment) && !stored.includes(relatedFragment));
+    const allSources = new Map([...context.sources, ...comparisonSources].map(source => [`${source.libraryID}:${source.attachmentKey}`, source]));
+    return { checks, sources: Array.from(allSources.values()).map(source => ({ title: source.title, totalPages: source.totalPages, suppliedPages: source.pages.length })) };
   } finally {
     panel?.destroy(); overlay.remove(); await service.shutdown();
     if (previousFocus?.isConnected) previousFocus.focus();

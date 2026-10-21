@@ -1,6 +1,6 @@
 export interface EndpointConfig { id: string; name: string; baseURL: string; stream: boolean }
 export interface ModelConfig { id: string; endpointId: string; name: string; model: string }
-export interface Config { version: 1; endpoints: EndpointConfig[]; models: ModelConfig[]; defaultModelId: string; systemPrompt: string }
+export interface Config { version: 1; endpoints: EndpointConfig[]; models: ModelConfig[]; defaultModelId: string; systemPrompt: string; appearance?: { userMessageColor: string } }
 export interface PaperScope { libraryID: number; itemKey: string; title: string }
 export interface ReadingOptions { currentPaper: boolean; relatedPapers: boolean }
 export interface PaperSource { id: string; title: string; libraryID: number; itemKey: string; attachmentKey: string; pages: number[]; totalPages: number; truncated: boolean }

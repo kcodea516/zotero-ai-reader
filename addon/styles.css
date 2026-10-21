@@ -98,13 +98,18 @@
 .zar-root .zar-message-copy:disabled { opacity: .4; cursor: default; }
 .zar-root .zar-copy-feedback { font-size: .85em; color: var(--zar-muted); }
 .zar-root .zar-message-model { width: 100%; overflow-wrap: anywhere; }
+.zar-root .zar-message-user { background: var(--zar-user-message-bg, #eaf3ff); color: var(--zar-user-message-fg, #000000); }
+.zar-root .zar-message-user .zar-message-header, .zar-root .zar-message-user .zar-message-role,
+.zar-root .zar-message-user .zar-message-quote, .zar-root .zar-message-user .zar-message-copy,
+.zar-root .zar-message-user .zar-message-copy:hover:not(:disabled), .zar-root .zar-message-user .zar-markdown a { color: inherit; }
 .zar-root .zar-message-context { font-size: .82em; margin-bottom: 7px; white-space: pre-wrap; }
-.zar-root .zar-message-sources { border-top: 1px solid var(--zar-border); margin-top: 9px; padding-top: 7px; font-size: .84em; }
+.zar-root .zar-message-sources { min-width: 0; max-width: 100%; border-top: 1px solid var(--zar-border); margin-top: 9px; padding-top: 7px; font-size: .84em; }
 .zar-root .zar-message-sources summary { cursor: pointer; color: var(--zar-muted); }
-.zar-root .zar-source-link { display: block; appearance: none; font: inherit; text-align: start; color: var(--accent-blue, LinkText); padding: 5px 0 1px; border: 0; background: transparent; cursor: pointer; overflow-wrap: anywhere; width: 100%; }
+.zar-root .zar-source-item { min-width: 0; max-width: 100%; margin-top: 7px; padding: 8px; border: 1px solid var(--zar-border); border-radius: 6px; }
+.zar-root .zar-source-link { appearance: none; display: block; width: 100%; min-width: 0; max-width: 100%; height: auto; min-height: 0; max-height: none; white-space: normal; font: inherit; line-height: 1.45; text-align: start; color: var(--accent-blue, LinkText); padding: 0; margin: 0; border: 0; background: transparent; cursor: pointer; overflow-wrap: anywhere; }
 .zar-root .zar-source-link:hover { text-decoration: underline; }
 .zar-root .zar-source-link:focus-visible { outline: 2px solid var(--color-accent, Highlight); }
-.zar-root .zar-source-pages { color: var(--zar-muted); margin-bottom: 4px; }
+.zar-root .zar-source-pages { min-width: 0; max-width: 100%; color: var(--zar-muted); margin-top: 5px; line-height: 1.5; overflow-wrap: anywhere; }
 .zar-root .zar-message-error { font-size: .9em; margin-top: 8px; line-height: 1.5; white-space: pre-wrap; }
 .zar-root .zar-message-quote { border-inline-start: 2px solid var(--zar-border); padding-inline-start: 8px; margin: 0 0 8px; color: var(--zar-muted); white-space: pre-wrap; font-size: .92em; max-height: 130px; overflow: auto; }
 .zar-root .zar-markdown { line-height: 1.6; user-select: text; }
@@ -146,7 +151,21 @@
 .zar-root .zar-field input:not(.input):not([type=checkbox]), .zar-root .zar-field .zar-native-select { width: 100%; }
 .zar-root .zar-settings-prompt { min-height: 100px; }
 .zar-root .zar-check { display: flex; align-items: center; gap: 7px; margin-block: 9px; }
-.zar-root .zar-endpoint { margin-bottom: 14px; }
+.zar-root .zar-endpoint { min-width: 0; max-width: 100%; margin-block: 12px; border: 1px solid var(--zar-border); border-radius: 8px; overflow: hidden; }
+.zar-root .zar-endpoint-summary { min-width: 0; max-width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px; cursor: pointer; list-style: none; background: color-mix(in srgb, currentColor 3%, transparent); }
+.zar-root .zar-endpoint-summary::marker, .zar-root .zar-endpoint-summary::-webkit-details-marker { display: none; content: ''; }
+.zar-root .zar-endpoint-summary:focus-visible { outline: 2px solid var(--color-accent, Highlight); outline-offset: -2px; }
+.zar-root .zar-endpoint-summary-text { flex: 1 1 auto; min-width: 0; max-width: 100%; }
+.zar-root .zar-endpoint-name { display: block; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; }
+.zar-root .zar-endpoint-meta { display: block; margin-top: 4px; font-size: .85em; color: var(--zar-muted); line-height: 1.45; overflow-wrap: anywhere; }
+.zar-root .zar-endpoint-indicator { flex: 0 0 auto; color: var(--zar-muted); font-size: .85em; }
+.zar-root .zar-endpoint-body { min-width: 0; max-width: 100%; padding: 0 12px 12px; border-top: 1px solid var(--zar-border); }
+.zar-root .zar-color-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.zar-root .zar-color-controls > .zar-field:first-child { flex: 0 0 auto; }
+.zar-root .zar-color-controls > .zar-field:last-child { flex: 1 1 120px; }
+.zar-root input.zar-user-message-color { flex: none; width: 48px; height: 34px; min-width: 0; padding: 3px; cursor: pointer; }
+.zar-root input.zar-user-message-color-value { flex: 1 1 120px; width: 120px; min-width: 0; max-width: 100%; }
+.zar-root .zar-color-preview-user { margin-top: 10px; padding: 10px; border: 1px solid var(--zar-border); border-radius: 8px; background: #eaf3ff; color: #000000; line-height: 1.5; overflow-wrap: anywhere; }
 .zar-root .zar-endpoint-head { justify-content: space-between; flex-wrap: wrap; }
 .zar-root .zar-model-editor { border-top: 1px solid var(--zar-border); margin-top: 10px; padding-top: 8px; }
 .zar-root .zar-settings-actions { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; margin-block: 12px; }

@@ -56,6 +56,31 @@ test('Chinese concepts retrieve topically matching metadata without requiring En
   assert.equal(rankPapers(current, [encoder, unrelated], '图片编码器如何共享资源', [])[0].itemKey, 'ENCODE');
 });
 
+test('a specifically named paper excludes topic and historical matches instead of padding the result', () => {
+  const topical: PaperRecord = { ...unified, itemKey: 'TOPIC', shortTitle: 'ShardPilot', title: 'ShardPilot: Vision Encoding and Decoding Resource Sharing' };
+  const historical: PaperRecord = { libraryID: 1, itemKey: 'HISTORY', shortTitle: 'OldStudy', title: 'OldStudy: A Database Study' };
+  const ranked = rankPapers(current, [current, topical, historical, unified, unified], 'Nova和UnifiedServe有什么不同？', ['OldStudy 的机制是什么？']);
+  assert.deepEqual(ranked.map(paper => paper.itemKey), ['UNIFIED']);
+});
+
+test('multiple explicitly named papers are retained without unrelated topical additions', () => {
+  const named: PaperRecord = { ...unified, itemKey: 'NAMED', shortTitle: 'ShardPilot', title: 'ShardPilot: Vision Encoding and Decoding Resource Sharing' };
+  const topical: PaperRecord = { ...unified, itemKey: 'TOPIC', shortTitle: 'OtherEngine', title: 'OtherEngine: Vision Encoding and Decoding Resource Sharing' };
+  const ranked = rankPapers(current, [current, topical, named, unified, named], '比较Nova、UnifiedServe和ShardPilot的资源共享方法');
+  assert.equal(ranked.length, 2);
+  assert.deepEqual(new Set(ranked.map(paper => paper.itemKey)), new Set(['UNIFIED', 'NAMED']));
+});
+
+test('broad related-work searches still return up to three topical matches', () => {
+  const topical = Array.from({ length: 4 }, (_, index): PaperRecord => ({
+    ...unified, itemKey: `TOPIC${index}`, shortTitle: `Study${index}`,
+    title: `Study${index}: Vision Encoding and Decoding Resource Sharing`,
+  }));
+  const ranked = rankPapers(current, [...topical, unrelated], '查找共享GPU的视觉编码与解码资源并发相关工作');
+  assert.equal(ranked.length, 3);
+  assert(ranked.every(paper => paper.itemKey.startsWith('TOPIC')));
+});
+
 test('ordinary short documents are included in full with physical PDF page citations', () => {
   const context = buildPaperContext(document(current, [{ page: 1, text: 'Abstract' }, { page: 2, text: 'III. SYSTEM OVERVIEW\nFirst component.' }, { page: 3, text: 'Second component.' }], 3));
   const payload = JSON.parse(context.text);

@@ -1,29 +1,20 @@
-# Zotero AI 阅读助手
+# Zotero AI Reader
 
-在 Zotero PDF 阅读器右侧增加 AI 聊天区块。提问时自动读取当前文献的本地 PDF，并从同一文库中查找相关论文原文，支持带页码的引用和按文献保存的多轮对话。接口和模型可自行配置，使用 OpenAI 兼容协议。
+A Chinese-language reading assistant in the Zotero PDF sidebar. Ask about the current paper without copying its text, continue a conversation, switch models, and open cited PDF pages. The plugin supports configurable OpenAI-compatible Chat Completions endpoints.
 
-对话记录在限定高度的区域内滚动，输入框保留在下方。每条消息带有边框，底部的复制图标可复制该条内容。输入框未获得焦点时也显示边框。
+## Installation
 
-## 安装
+1. Download `zotero-ai-reader-1.2.0.xpi` from the [release page](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.2.0).
+2. In Zotero, open **Tools → Plugins**, then choose **Install Plugin From File** from the gear menu.
+3. Select the XPI and open a PDF. Expand **AI 阅读助手** in the right sidebar. When Translate for Zotero is installed, the assistant appears below the translation section.
 
-在 macOS、Zotero 10.0.6 上完成原文读取和侧栏实机脚本检查，具体范围见 [验证记录](VALIDATION.md)。检查使用模拟模型响应，未评估真实模型回答的准确性。其他系统和 Zotero 版本尚未验证。
+Updates are installed manually using the same steps. Updating preserves local conversations and endpoint settings. The plugin has been checked on macOS with Zotero 10.0.6; other platforms and versions have not been verified. See [validation records](VALIDATION.md) for the scope of the checks.
 
-1. 从 [1.1.1 发布页](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.1.1) 下载 `zotero-ai-reader-1.1.1.xpi`。
-2. 在 Zotero 中打开“工具 → 插件”，点击齿轮按钮，选择“从文件安装插件”。
-3. 选择下载的 `.xpi` 文件。
-4. 打开一篇 PDF，在右侧展开“AI 阅读助手”。安装了 Translate for Zotero 时，AI 模块排在“翻译”下方。
+## Configure an endpoint and model
 
-如果侧栏被收起，先展开右侧的条目详情区，再点击 AI 图标。
+Open **设置** in the assistant, or its pane in Zotero Settings. Add an endpoint with a name, Base URL, and API key, then add a model with a display name and the provider's actual model ID. Leaving the key field blank preserves an existing key; removing it requires the separate clear action.
 
-当前版本采用手动更新：获得新版 `.xpi` 后，按相同步骤重新安装即可。更新会保留本机对话和接口配置。
-
-## 配置 API 和模型
-
-点击 AI 模块中的“设置”，也可从 Zotero 设置页打开“AI 阅读助手”。
-
-先添加接口，填写名称、Base URL 和 API Key，再为该接口添加模型，填写显示名称与服务商提供的实际 model ID。密钥输入框留空会保留已有密钥；清除密钥使用单独的清除操作。
-
-Base URL 示例：
+Accepted URL examples:
 
 ```text
 https://api.example.com/v1
@@ -32,69 +23,63 @@ https://gateway.example.com/v1/chat/completions
 http://127.0.0.1:1234/v1
 ```
 
-这些地址只用于说明格式，请换成自己的服务地址。公网接口使用 HTTPS，本机服务支持 localhost、127.0.0.1 和 IPv6 回环地址的 HTTP。地址中不要包含密钥、查询参数或账号密码。
+Replace these examples with your provider's address. Public endpoints must use HTTPS. HTTP is supported for local loopback addresses. URLs cannot contain credentials, query parameters, or fragments.
 
-接口需要支持 Chat Completions 的 `model`、`messages` 和 `stream` 字段。仅提供 Responses API、Anthropic 原生 Messages 或 Gemini 原生协议的地址不能直接使用，需要服务商提供兼容接口。
+The endpoint must support the Chat Completions `model`, `messages`, and `stream` fields. Native Responses, Anthropic Messages, and Gemini protocols require a compatible gateway. Endpoint cards start collapsed and show the name, host, and model count. Expand a card to edit details; adding an endpoint opens it automatically. Model and key drafts are retained when a card is collapsed. Multiple models can share an endpoint, and different endpoints can use separate keys. The connection test sends a short request to the selected provider and may incur usage charges; it does not create a conversation.
 
-一个接口可以添加多个模型；不同接口也可以分别配置密钥。保存后在侧栏下拉框中选择“接口名 / 模型名”。点击连接测试会发送一条简短的测试请求，可能产生服务商计费；测试结果不会写入文献对话。
+## Current paper and on-demand library lookup
 
-## 自动读取文献原文
+Two permissions are saved per conversation. Both are enabled by default:
 
-打开 PDF 后，可以直接问“解释 System Overview 的四个部分”或“这篇与 UnifiedServe 的机制有什么不同”，无需先复制正文。发送问题时，插件准备当前文献原文，并根据问题、近期追问和题录信息，从同一 Zotero 文库选择最多 3 篇相关论文，读取可用的本地 PDF。它不会自动联网搜索或下载库外文献。
+- **读取原文** reads the current paper's local PDF before answering.
+- **按需查文库** allows the assistant to look up other papers when the current question needs a comparison or additional literature evidence.
 
-侧栏有两个按会话保存的选项，默认开启：
+Library lookup covers the **same Zotero library**, including papers outside the current collection. It does not search other Zotero libraries or the web, and does not download missing papers.
 
-- “读取原文”：读取当前文献的本地 PDF。
-- “联查文库”：检索同一文库中相关论文的本地 PDF。只需读当前论文时，可以关闭这一项。
+Enabling lookup does not attach related PDFs to every question. After preparing any enabled current-paper evidence, the selected model makes a bounded routing decision. The routing prompt asks it to keep explanations, summaries, translations, and follow-up questions about the current paper on that paper alone. A positive decision can trigger a library search and extraction from up to three local PDFs. If the search matches explicitly named papers, it returns those matches without filling unused slots with broad topic matches. A previous comparison does not automatically carry those PDFs into the next question. If the routing decision fails, the plugin skips the lookup, keeps any available current-paper evidence, and reports the failure.
 
-两项都关闭后，只发送当前问题、手动添加的引用和已有对话。读取期间可点击“停止”，该轮不会继续调用模型接口。
+Routing uses an additional short request to the selected endpoint. It receives the current question, the last three questions, the current paper's title, and a bounded excerpt of the current paper when reading is enabled. It does not receive other papers' contents before deciding to search. Disable **按需查文库** to skip both routing and library lookup. Disable both permissions to send only the question, manual quotations, and completed conversation history.
 
-普通短论文可完整进入本轮材料；长文按问题选择相关页及相邻内容。当前论文的材料预算约为 90,000 字符，本轮文献上下文限制为 130,000 字符。界面会提示是否只提供了部分摘录，回答不能把未提供的内容当作已经阅读。
+Short papers can be supplied in full. Longer papers use relevant pages and nearby passages. The current paper has a material budget of about 90,000 characters, and the combined evidence budget is 130,000 characters. Partial coverage is disclosed. Missing, encrypted, scanned, or otherwise unreadable PDFs are not treated as read. The plugin does not perform OCR, and text extraction may omit figures, complex equations, or layout relationships.
 
-每条回答下方的来源详情列出本轮实际发送的论文和 PDF 页码。回答使用 `[S1 p.4]` 这样的引用，点击可跳到对应 PDF。页码从 PDF 文件第一页计为 1，可能与论文页脚印刷的页码不同。来源列表保存在该条回答中，后续追问重新准备原文。
+Answers with retrieved evidence have a source list showing the actual papers and pages supplied for that round. A citation such as `[S1 p.4]` opens the corresponding local PDF page. Pages are counted from the first page of the PDF, which may differ from printed page numbers. Source titles wrap above a separate page-number row.
 
-附件未下载、PDF 加密或无法提取文字时，界面会提示缺少原文。插件不做 OCR，扫描件不能仅凭题录被标成已读取。图片、复杂公式和版面关系也可能无法完整转成文字；需要核对图表时应打开原 PDF。
+## Conversations and history
 
-## 阅读与对话
+- Press Enter to send, Shift+Enter for a newline, or Cmd/Ctrl+Enter to send.
+- Select PDF text and choose **询问 AI** to add an editable quotation. Adding a quotation does not send a request.
+- Continue in the same input after an answer. Long responses scroll within the message area.
+- Switch models to continue the conversation with a different model. Each answer keeps its original endpoint and model label.
+- Stop an active request or retry an incomplete round. Failed and stopped rounds are excluded from later conversation context.
+- Open **历史** for a separate history page. Cards show the conversation title, paper, update time, latest message, and round count. Search or filter by current paper/all history, select a card to enter, or return to the active conversation. Drafts are preserved when switching.
+- Rename or delete an individual conversation from its card. Deletion requires confirmation.
+- Copy a message using the icon below it, or copy the current conversation as Markdown from history.
 
-- 直接在输入框中提问。Enter 发送，Shift+Enter 换行，也可用 Cmd/Ctrl+Enter 发送。
-- 回答完成后，在同一个输入框中继续追问。长回答在对话区域内滚动。
-- 在 PDF 中选中文字，点击选区弹窗的“询问 AI”，核对引用内容后填写问题并发送。添加引用本身不会调用 API。
-- 切换模型后，新模型会接着当前会话回答。每条回答保留调用时的接口和模型名称。
-- 生成过程中可以停止。失败或停止的内容会保留并标注状态，该轮不会自动加入下一轮上下文。重试使用原来的问题。
-- 每篇文献可以新建多段对话。点击“历史”进入独立列表页，按标题、所属论文、更新时间和最近消息区分会话。可切换“当前文献”和“全部历史”或搜索内容，选中一段后进入聊天；“返回对话”可回到原来的会话。每段会话仍可重命名或删除。
-- 回答支持 Markdown、代码块，以及 `$...$`、`$$...$$`、`\(...\)`、`\[...\]` 格式的数学公式。
-- 点击消息下方的复制图标，复制该条提问或回答。
+Answers support Markdown, code blocks, and local LaTeX rendering. Completed conversation history is sent with the next question. Switching providers sends that history to the newly selected provider. If the provider reports an oversized context, disable library lookup, choose a model with a larger context window, or start a new conversation.
 
-当前会话成功完成的历史会随下一次问题发送给选中的接口。切换到另一个服务商后，该服务商也会收到这些上下文。文献原文会增加请求长度和服务商用量；服务端提示上下文超长时，可以关闭联查文库、改用支持更长上下文的模型，或新建会话。
+## Message colors
 
-## 数据保存
+User messages have a light blue background by default (`#eaf3ff`). In **设置 → 对话外观**, choose a color or enter a six-digit hex value. The preview updates immediately. Click **保存设置** to apply the color to existing and new user messages; the plugin selects black or white text for contrast. **恢复默认颜色** resets the color preview without changing endpoint or model settings; click **保存设置** to apply the reset. Assistant messages retain their existing appearance.
 
-会话和非敏感配置保存在 Zotero 配置目录下的插件专属目录中，不随 Zotero 同步。聊天请求直接发送给你配置的接口；服务商的数据处理和保存规则由该服务商决定。
+## Data and privacy
 
-API Key 使用 Zotero 的系统密钥存储和登录管理器保存。加密保存不可用时，密钥只在当前运行期间保留，界面会提示重新启动后需要再填。
+Conversations and non-secret settings are saved in the plugin's directory inside the Zotero profile. They are not synced through Zotero. API keys use Zotero's system secret storage and login manager. If encrypted storage is unavailable, the key is kept only for the current session and the interface reports this limitation.
 
-默认发送的内容包括当前问题、手动加入的引用、当前会话此前成功完成的对话，以及当前论文和相关论文提取的文字。材料发送到当前选中的接口，可能包含本地私人文献内容；可在发送前关闭“读取原文”和“联查文库”。
+Requests go directly to the endpoint you configure. Enabled reading permissions can send local paper text, including private documents, to that provider. The provider's own data-handling terms apply. Reading and lookup also increase request size and provider usage.
 
-提取的原文仅在运行内存中缓存，不另存一份文库语料。会话文件保存问答、读取选项和来源元数据，不保存自动提取的 PDF 全文；模型回答本身仍作为对话保存。插件不会将 PDF、提取的文库正文或私人对话上传到本项目的 GitHub 仓库。回答中的远程图片不会自动加载。
+Extracted PDF text is cached in memory. Conversation files save questions, answers, reading permissions, and source metadata, without saving the automatically extracted PDF corpus. Model answers remain part of the saved conversation. The plugin does not upload PDFs, extracted text, keys, or private conversations to this GitHub repository. Remote images in model responses are not loaded automatically.
 
-## 常见问题
+## Troubleshooting
 
-密钥无效：检查接口地址是否与密钥属于同一服务商，以及密钥权限、余额和有效期。
+- **Authentication or model errors:** check the endpoint, key permissions, quota, and actual model ID.
+- **Streaming incompatibility:** disable streaming in the endpoint settings and retry.
+- **Missing original text:** download the attachment and confirm the PDF contains selectable text. Scans need OCR in another tool.
+- **Incomplete paper coverage:** inspect the source pages and partial-excerpt notice, and check figures or equations in the PDF itself.
+- **History save errors:** check profile permissions and available disk space before quitting Zotero.
 
-模型不存在：确认实际 model ID，显示名称可以自行填写，model ID 必须与接口一致。
+## Build from source
 
-流式不兼容：在接口设置中关闭流式输出后重试。
-
-读不到原文：确认 PDF 附件已下载并能选中文字。扫描件需要先通过其他工具完成 OCR；加密或提取失败的文件无法直接读取。
-
-原文回答不完整：查看该条回答的来源详情和摘录提示。长文可能只发送了相关页，PDF 中的图片或复杂公式也可能丢失。
-
-历史保存失败：界面会显示保存错误。先检查 Zotero 配置目录的可写权限和剩余磁盘空间，再退出应用。
-
-## 从源码构建
-
-需要 Node.js 24 或更高版本和 Python 3。运行：
+Use Node.js 24 or newer and Python 3:
 
 ```sh
 npm ci
@@ -103,12 +88,10 @@ npm test
 npm run build
 ```
 
-安装包输出到 `build/zotero-ai-reader-1.1.1.xpi`。`src/` 是插件代码，`addon/` 是 Zotero 资源和入口，`tests/` 包含核心行为测试。构建产物包含本地渲染库和字体，安装使用时不需要 Node.js。
+The package is written to `build/zotero-ai-reader-1.2.0.xpi`. Source code is in `src/`, Zotero resources in `addon/`, and tests in `tests/`. The package includes local rendering libraries and fonts; installed users do not need Node.js. CI checks types, runs unit tests, builds the XPI, and uploads it as an artifact. Native Zotero integration fixtures are documented in [VALIDATION.md](VALIDATION.md).
 
-CI 会执行类型检查、测试和构建，并保存 XPI 构建产物。CI 不验证 Zotero 窗口中的布局和交互。
+## Feedback and contribution
 
-## 反馈与贡献
+Open an [issue](https://github.com/kcodea516/zotero-ai-reader/issues) with your Zotero version, operating system, reproduction steps, and a redacted screenshot. Do not include API keys, private conversation logs, or papers you are not allowed to share. Pull requests are welcome.
 
-在 [Issues](https://github.com/kcodea516/zotero-ai-reader/issues) 中反馈问题时，请附上 Zotero 版本、操作系统、复现步骤和经过脱敏的截图。请勿提交 API Key、完整私人对话或未授权分享的文献内容。代码修改可通过 Pull Request 提交。
-
-这是独立开发的 Zotero 插件，采用 [MIT 许可证](LICENSE)，与 Zotero 官方项目无隶属关系。
+This is an independent Zotero plugin under the [MIT license](LICENSE), with no affiliation to the Zotero project.
