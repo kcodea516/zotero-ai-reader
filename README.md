@@ -1,6 +1,25 @@
-# Zotero AI Reader
+<h1 align="center">Zotero AI Reader:<br />Chat with your papers, inside Zotero</h1>
 
-A Chinese-language reading assistant in the Zotero PDF sidebar. Ask about the current paper without copying its text, continue a conversation, switch models, and open cited PDF pages. The plugin supports configurable OpenAI-compatible Chat Completions endpoints.
+<p align="center">
+  <strong>Read and discuss your papers without leaving Zotero.</strong><br />
+  Ask about the paper you're reading, compare related work when needed, and open cited PDF pages.
+</p>
+
+<p align="center">
+  <a href="#installation">Install</a> ·
+  <a href="#configure-an-endpoint-and-model">User guide</a> ·
+  <a href="CHANGELOG.md">Changelog</a> ·
+  <a href="https://github.com/kcodea516/zotero-ai-reader/issues">Feedback</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/kcodea516/zotero-ai-reader/releases/latest"><img src="https://img.shields.io/github/v/release/kcodea516/zotero-ai-reader?label=release&amp;color=c9313e" alt="Latest release" /></a>
+  <a href="https://github.com/kcodea516/zotero-ai-reader/releases"><img src="https://img.shields.io/github/downloads/kcodea516/zotero-ai-reader/total?color=c9313e" alt="GitHub release downloads" /></a>
+  <a href="https://github.com/kcodea516/zotero-ai-reader/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/kcodea516/zotero-ai-reader/ci.yml?branch=main&amp;label=CI" alt="CI status" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/kcodea516/zotero-ai-reader?color=555" alt="MIT license" /></a>
+</p>
+
+A Chinese-language reading assistant in the Zotero PDF sidebar, with configurable OpenAI-compatible Chat Completions endpoints. Continue conversations and switch models while keeping the paper open.
 
 ## Installation
 
