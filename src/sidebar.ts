@@ -27,12 +27,14 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   let allHistory = false;
   let query = '';
   let actionError = '';
+  let actionEpoch = 0;
   let scheduled: ReturnType<typeof setTimeout> | undefined;
   let modelsSignature = '';
   let historySignature = '';
   let quoteSignature = '';
   let renderedConversationId = '';
   const copyTimers = new Map<string, number>();
+  const historyRendered = new Map<string, { root: HTMLElement; title: HTMLElement; paper: HTMLElement; time: HTMLTimeElement; preview: HTMLElement; count: HTMLElement; badge: HTMLElement }>();
   const rendered = new Map<string, { root: HTMLElement; content: HTMLElement; signature: string; contentText: string | undefined; quoteRef: Quote | undefined; headerSignature: string; header: HTMLElement; quote: HTMLElement; error: HTMLElement; copy: HTMLButtonElement; context: HTMLElement; sources: HTMLDetailsElement }>();
   const root = el('div', 'zar-root zar-sidebar');
   root.setAttribute('aria-label', 'AI 阅读助手');
@@ -41,16 +43,16 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   nativeTooltip(modelSelect, '切换后，下一次提问将使用所选模型，并保留此前已完成的对话。');
   const toolbarActions = el('div', 'zar-toolbar-actions');
   const newButton = button('新建', () => {
-    actionError = ''; conversationId = host.service.createConversation(scope).id; historyOpen = false; render(); draft.focus();
+    prepareNavigation(); conversationId = host.service.createConversation(scope).id; historyOpen = false; render(); draft.focus();
   });
   nativeTooltip(newButton, '为当前文献新建会话');
-  const historyButton = button('历史', () => { historyOpen = !historyOpen; render(); if (historyOpen) historyQuery.focus(); });
+  const historyButton = button('历史', () => { prepareNavigation(); historyOpen = true; render(); historyQuery.focus(); });
   historyButton.setAttribute('aria-expanded', 'false');
   const settingsButton = button('设置', () => host.openSettings(win));
   toolbarActions.append(newButton, historyButton, settingsButton); toolbar.append(modelSelect, toolbarActions);
   const paper = el('div', 'zar-paper');
   const paperLabel = el('div', 'zar-muted'); const paperTitle = el('strong');
-  const returnButton = button('返回当前文献', () => { conversationId = host.service.forScope(scope).id; render(); }, 'zar-text-button');
+  const returnButton = button('返回当前文献', () => { prepareNavigation(); conversationId = host.service.forScope(scope).id; render(); }, 'zar-text-button');
   const readingOptions = el('div', 'zar-reading-options');
   const currentLabel = el('label'); const currentCheck = el('input'); currentCheck.type = 'checkbox';
   currentLabel.append(currentCheck, doc.createTextNode('读取原文'));
@@ -62,12 +64,19 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   const readingHint = el('div', 'zar-muted zar-reading-hint', '原文与相关片段会随问题发送到所选接口。');
   paper.append(paperLabel, paperTitle, returnButton, readingOptions, readingHint);
   const history = el('div', 'zar-history');
-  const historyControls = el('div', 'zar-row');
+  history.setAttribute('role', 'region'); history.setAttribute('aria-label', '历史对话');
+  const historyHeader = el('div', 'zar-history-header');
+  const historyHeading = el('h2', '', '历史对话');
+  const historyBack = button('返回对话', () => { prepareNavigation(); historyOpen = false; render(); draft.focus(); }, 'zar-history-back');
+  historyHeader.append(historyHeading, historyBack);
+  const historyControls = el('div', 'zar-row zar-history-controls');
   const historyScope = nativeSelect(doc, 'zar-history-scope', '历史记录范围');
   setNativeOptions(historyScope, [{ value: 'paper', label: '当前文献' }, { value: 'all', label: '全部历史' }], 'paper');
   const historyQuery = el('input'); historyQuery.type = 'search'; historyQuery.placeholder = '搜索对话'; historyQuery.setAttribute('aria-label', '搜索对话内容与标题');
   historyControls.append(historyScope, historyQuery);
   const historyList = el('div', 'zar-history-list');
+  const historyEmpty = el('div', 'zar-empty');
+  const historyStatus = el('div', 'zar-status'); historyStatus.setAttribute('role', 'status'); historyStatus.setAttribute('aria-live', 'polite');
   const exportButton = button('复制当前会话为 Markdown', () => {
     const value = current();
     if (!value) return;
@@ -78,7 +87,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     ])].join('\n');
     host.copy(content); actionError = '已复制当前会话。'; renderStatus();
   }, 'zar-text-button');
-  history.append(historyControls, historyList, exportButton);
+  history.append(historyHeader, historyControls, historyList, exportButton, historyStatus);
   const messages = el('div', 'zar-messages'); messages.setAttribute('role', 'log'); messages.setAttribute('aria-label', '对话记录');
   // Announcing every streamed token makes screen readers unusable; status is announced separately.
   messages.setAttribute('aria-live', 'off');
@@ -111,11 +120,28 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   root.append(toolbar, paper, history, messages, compose); body.append(root);
 
   function current(): Conversation | undefined { return host.service.getConversation(conversationId); }
+  function prepareNavigation(): void {
+    if (!historyOpen && renderedConversationId) {
+      const outgoing = host.service.getConversation(renderedConversationId);
+      // Commit native editor values before changing which conversation owns them.
+      draft.ref?.blur(); quoteInput.ref?.blur();
+      if (outgoing) {
+        if (draft.value !== outgoing.draft) host.service.setDraft(outgoing.id, draft.value);
+        if (outgoing.quote && quoteInput.value !== outgoing.quote.text) host.service.setQuote(outgoing.id, { ...outgoing.quote, text: quoteInput.value });
+      }
+    }
+    actionEpoch++; actionError = '';
+  }
   function run(action: () => unknown): void {
     actionError = '';
-    try {
-      Promise.resolve(action()).catch(error => { actionError = failure(error); renderStatus(); });
-    } catch (error) { actionError = failure(error); renderStatus(); }
+    const target = conversationId;
+    const epoch = actionEpoch;
+    const report = (error: unknown) => {
+      if (destroyed || conversationId !== target || actionEpoch !== epoch) return;
+      actionError = failure(error); renderStatus();
+    };
+    try { Promise.resolve(action()).catch(report); }
+    catch (error) { report(error); }
   }
   function submit(): void {
     const value = current();
@@ -129,35 +155,87 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     return ({ streaming: '正在生成…', error: '回答未完成', stopped: '已停止', interrupted: '上次生成已中断', complete: '' } as Record<string, string>)[value] || '';
   }
   function renderStatus(): void {
-    status.textContent = [host.service.storageError, actionError].filter(Boolean).join('\n');
+    const text = [host.service.storageError, actionError].filter(Boolean).join('\n');
+    status.textContent = text; historyStatus.textContent = text;
   }
   function activate(value: Conversation): void {
-    conversationId = value.id; host.service.activateConversation(value.id); actionError = ''; historyOpen = false; render();
+    prepareNavigation(); conversationId = value.id; host.service.activateConversation(value.id); actionError = ''; historyOpen = false; render(); draft.focus();
   }
   function renderHistory(): void {
     if (!historyOpen) return;
     const entries = host.service.listConversations(allHistory ? undefined : scope, query);
-    const signature = JSON.stringify([historyOpen, allHistory, query, conversationId, entries.map(value => [value.id, value.title, value.scope.title, new Date(value.updatedAt).toLocaleDateString()])]);
+    const signature = JSON.stringify([allHistory, query, conversationId, entries.map(value => {
+      const last = value.messages.at(-1);
+      return [value.id, value.title, value.scope.title, value.updatedAt, value.messages.length, last?.id, last?.content, last?.quote?.text, last?.status, last?.contextNotice];
+    })]);
     if (signature === historySignature) return;
-    historySignature = signature; historyList.replaceChildren();
-    if (!entries.length) historyList.append(el('div', 'zar-empty', query ? '没有找到匹配的对话。' : '暂无对话记录。'));
-    for (const entry of entries) {
-      const item = el('div', 'zar-history-item'); item.setAttribute('aria-current', String(entry.id === conversationId));
-      const open = button(entry.title || '新对话', () => activate(entry), 'zar-history-open');
-      const meta = el('div', 'zar-muted zar-history-meta', `${entry.scope.title} · ${new Date(entry.updatedAt).toLocaleDateString()}`);
-      const tools = el('div', 'zar-history-tools');
-      tools.append(button('重命名', () => {
-        const next = win.prompt('会话名称', entry.title);
-        if (next?.trim()) run(() => host.service.renameConversation(entry.id, next.trim()));
-      }, 'zar-text-button'), button('删除', () => {
-        if (win.confirm(`确定删除“${entry.title}”的全部对话记录吗？此操作无法撤销。`)) {
-          run(() => host.service.deleteConversation(entry.id));
-          if (!current()) conversationId = host.service.forScope(scope).id;
-          render();
-        }
-      }, 'zar-text-button'));
-      item.append(open, meta, tools); historyList.append(item);
+    historySignature = signature;
+    const focused = historyList.contains(doc.activeElement) ? doc.activeElement as HTMLElement : undefined;
+    const wanted: HTMLElement[] = [];
+    if (!entries.length) {
+      historyEmpty.textContent = query ? '没有找到匹配的对话。' : '暂无对话记录。';
+      wanted.push(historyEmpty);
     }
+    for (const entry of entries) {
+      let card = historyRendered.get(entry.id);
+      if (!card) {
+        const item = el('div', 'zar-history-item');
+        const open = el('button', 'zar-history-open'); open.type = 'button';
+        open.addEventListener('click', () => {
+          const value = host.service.getConversation(entry.id);
+          if (value) activate(value);
+        });
+        const heading = el('span', 'zar-history-heading');
+        const title = el('span', 'zar-history-title');
+        const badge = el('span', 'zar-history-current', '当前会话');
+        heading.append(title, badge);
+        const paper = el('span', 'zar-history-paper');
+        const meta = el('span', 'zar-history-meta');
+        const time = el('time');
+        const count = el('span', 'zar-history-count');
+        meta.append(time, count);
+        const preview = el('span', 'zar-history-preview');
+        open.append(heading, paper, meta, preview);
+        const tools = el('div', 'zar-history-tools');
+        tools.append(button('重命名', () => {
+          const value = host.service.getConversation(entry.id);
+          if (!value) return;
+          const next = win.prompt('会话名称', value.title);
+          if (next?.trim()) run(() => host.service.renameConversation(value.id, next.trim()));
+        }, 'zar-text-button'), button('删除', () => {
+          const value = host.service.getConversation(entry.id);
+          if (!value) return;
+          if (win.confirm(`确定删除“${value.title}”的全部对话记录吗？此操作无法撤销。`)) {
+            run(() => host.service.deleteConversation(value.id));
+            if (!current()) conversationId = host.service.forScope(scope).id;
+            render();
+          }
+        }, 'zar-text-button'));
+        item.append(open, tools);
+        card = { root: item, title, paper, time, preview, count, badge };
+        historyRendered.set(entry.id, card);
+      }
+      const active = entry.id === conversationId;
+      card.root.setAttribute('aria-current', String(active));
+      card.badge.hidden = !active;
+      card.title.textContent = entry.title || '新对话';
+      card.paper.textContent = entry.scope.title;
+      card.paper.title = entry.scope.title;
+      const updated = new Date(entry.updatedAt);
+      card.time.textContent = updated.toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      card.time.dateTime = updated.toISOString(); card.time.title = updated.toLocaleString();
+      card.count.textContent = `${entry.messages.filter(message => message.role === 'user').length} 轮对话`;
+      const last = entry.messages.at(-1);
+      const preview = last?.content || last?.quote?.text || last?.contextNotice || (last ? statusLabel(last.status) : '暂无消息');
+      card.preview.textContent = `${last ? (last.role === 'user' ? '我：' : 'AI：') : ''}${preview.replace(/\s+/g, ' ').trim().slice(0, 180)}`;
+      wanted.push(card.root);
+    }
+    for (const child of Array.from(historyList.children)) if (!wanted.includes(child as HTMLElement)) child.remove();
+    // Keep each card and action button mounted while streamed previews change.
+    for (let index = 0; index < wanted.length; index++) if (historyList.children[index] !== wanted[index]) historyList.insertBefore(wanted[index], historyList.children[index] || null);
+    if (focused?.isConnected && doc.activeElement !== focused) focused.focus({ preventScroll: true });
+    const retained = new Set(host.service.listConversations().map(entry => entry.id));
+    for (const id of historyRendered.keys()) if (!retained.has(id)) historyRendered.delete(id);
   }
   function renderModels(value: Conversation): void {
     const config = host.service.getConfig();
@@ -266,15 +344,18 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     if (destroyed) return;
     let value = current();
     if (!value) { value = host.service.forScope(scope); conversationId = value.id; }
+    root.dataset.view = historyOpen ? 'history' : 'chat';
+    toolbar.hidden = historyOpen; paper.hidden = historyOpen; messages.hidden = historyOpen; compose.hidden = historyOpen;
+    history.hidden = !historyOpen;
+    historyButton.setAttribute('aria-expanded', String(historyOpen));
+    if (historyOpen) { renderHistory(); renderStatus(); return; }
     const pinned = renderedConversationId !== value.id || messages.scrollHeight - messages.scrollTop - messages.clientHeight < 48;
     renderedConversationId = value.id;
     const foreign = !sameScope(value.scope, scope);
     paperLabel.textContent = foreign ? '正在查看其他文献的会话' : '当前文献';
     paperTitle.textContent = value.scope.title; paperTitle.title = value.scope.title;
     returnButton.hidden = !foreign;
-    history.hidden = !historyOpen;
-    historyButton.setAttribute('aria-expanded', String(historyOpen));
-    renderHistory(); renderModels(value);
+    renderModels(value);
     const wanted = value.messages.map(renderMessage);
     if (!wanted.length) wanted.push(empty);
     for (const child of Array.from(messages.children)) if (!wanted.includes(child as HTMLElement)) child.remove();
@@ -320,28 +401,31 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     if (value) run(() => host.service.setReadingOptions(value.id, { currentPaper: currentCheck.checked, relatedPapers: relatedCheck.checked }));
   });
   draft.addEventListener('input', () => {
-    const value = current(); if (value) { host.service.setDraft(value.id, draft.value); sendButton.disabled = !(draft.value.trim() || value.quote?.text.trim()) || !modelSelect.value; }
+    const value = host.service.getConversation(renderedConversationId); if (value) { host.service.setDraft(value.id, draft.value); sendButton.disabled = !(draft.value.trim() || value.quote?.text.trim()) || !modelSelect.value; }
   });
   quoteInput.addEventListener('input', () => {
-    const value = current(); if (value?.quote) host.service.setQuote(value.id, { ...value.quote, text: quoteInput.value });
+    const value = host.service.getConversation(renderedConversationId); if (value?.quote) host.service.setQuote(value.id, { ...value.quote, text: quoteInput.value });
   });
   render();
   return {
     updateScope(nextScope) {
-      const changed = !sameScope(scope, nextScope); scope = { ...nextScope };
+      const changed = !sameScope(scope, nextScope);
+      if (changed) prepareNavigation();
+      scope = { ...nextScope };
       if (changed) { conversationId = host.service.forScope(scope).id; actionError = ''; historySignature = ''; }
       render();
     },
     addQuote(quote) {
+      prepareNavigation();
       if (!sameScope(current()?.scope || scope, scope)) conversationId = host.service.forScope(scope).id;
       const value = current(); if (value) host.service.setQuote(value.id, quote);
-      root.hidden = false; render(); draft.focus();
+      historyOpen = false; root.hidden = false; render(); draft.focus();
     },
-    show() { root.hidden = false; render(); draft.focus(); },
+    show() { prepareNavigation(); historyOpen = false; root.hidden = false; render(); draft.focus(); },
     destroy() {
-      destroyed = true; unsubscribe(); if (scheduled) clearTimeout(scheduled);
+      destroyed = true; actionEpoch++; unsubscribe(); if (scheduled) clearTimeout(scheduled);
       for (const timer of copyTimers.values()) win.clearTimeout(timer);
-      copyTimers.clear(); rendered.clear(); root.remove(); void host.service.flush().catch(() => {});
+      copyTimers.clear(); rendered.clear(); historyRendered.clear(); root.remove(); void host.service.flush().catch(() => {});
     },
   };
 }

@@ -9,6 +9,7 @@
   box-sizing: border-box;
   min-width: 0;
   width: 100%;
+  max-width: 100%;
   color-scheme: inherit;
 }
 .zar-root *, .zar-root *::before, .zar-root *::after { box-sizing: border-box; }
@@ -19,9 +20,12 @@
   height: clamp(360px, calc(100vh - 190px), 760px);
   min-height: 0;
   overflow: hidden;
+  contain: inline-size;
 }
 .zar-sidebar > .zar-toolbar, .zar-sidebar > .zar-paper,
-.zar-sidebar > .zar-history, .zar-sidebar > .zar-compose { flex: 0 0 auto; }
+.zar-sidebar > .zar-compose { flex: 0 0 auto; }
+.zar-sidebar[data-view=history] > .zar-toolbar, .zar-sidebar[data-view=history] > .zar-paper,
+.zar-sidebar[data-view=history] > .zar-messages, .zar-sidebar[data-view=history] > .zar-compose { display: none; }
 .zar-root .zar-native-button, .zar-root .zar-native-select, .zar-root input:not(.input) {
   font-family: inherit;
   font-size: inherit;
@@ -58,17 +62,27 @@
 .zar-root .zar-reading-options label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
 .zar-root .zar-reading-options input { margin: 0; }
 .zar-root .zar-reading-hint { margin-top: 4px; font-size: .82em; }
-.zar-root .zar-history { padding-block: 8px; border-bottom: 1px solid var(--zar-border); }
-.zar-root .zar-history .zar-row { margin-bottom: 6px; }
-.zar-root .zar-history input { flex: 1; min-width: 0; width: 100%; }
-.zar-root .zar-history-list { max-height: 230px; overflow: auto; }
-.zar-root .zar-history-item { padding: 6px 0; border-top: 1px solid var(--zar-border); }
-.zar-root .zar-history-item:first-child { border-top: 0; }
-.zar-root .zar-history-open { width: 100%; text-align: start; white-space: normal; overflow-wrap: anywhere; }
-.zar-root .zar-history-open .button-text { white-space: normal; overflow-wrap: anywhere; text-align: start; }
-.zar-root .zar-history-item[aria-current=true] .zar-history-open { font-weight: 600; }
-.zar-root .zar-history-meta { margin: 3px 5px; overflow-wrap: anywhere; }
-.zar-root .zar-history-tools { display: flex; gap: 6px; margin: 4px 5px 0; }
+.zar-root .zar-history { display: flex; flex: 1 1 0; flex-direction: column; gap: 10px; width: 100%; min-width: 0; max-width: 100%; min-height: 0; padding-block: 8px 3px; overflow: hidden; }
+.zar-root .zar-history-header { min-width: 0; max-width: 100%; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.zar-root .zar-history-header h2 { margin: 0; font-size: 1.1em; font-weight: 600; }
+.zar-root .zar-history-back { flex: 0 0 auto; }
+.zar-root .zar-history-controls { min-width: 0; max-width: 100%; flex: 0 0 auto; flex-wrap: wrap; }
+.zar-root .zar-history-scope { flex: 1 1 120px; }
+.zar-root .zar-history input { flex: 1 1 150px; min-width: 0; width: 100%; }
+.zar-root .zar-history-list { flex: 1 1 0; min-width: 0; max-width: 100%; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding: 1px; scrollbar-gutter: stable; }
+.zar-root .zar-history-item { min-width: 0; max-width: 100%; margin-bottom: 10px; border: 1px solid var(--zar-border); border-radius: 8px; background: var(--material-background, Canvas); overflow: hidden; }
+.zar-root .zar-history-item[aria-current=true] { border-color: color-mix(in srgb, var(--accent-blue, Highlight) 55%, transparent); }
+.zar-root .zar-history-open { appearance: none; display: block; width: 100%; min-width: 0; max-width: 100%; height: auto; min-height: 0; max-height: none; white-space: normal; line-height: inherit; padding: 12px; margin: 0; border: 0; border-radius: 7px 7px 0 0; background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; overflow-wrap: anywhere; }
+.zar-root .zar-history-open:hover { background: color-mix(in srgb, currentColor 5%, transparent); }
+.zar-root .zar-history-open:focus-visible { outline: 2px solid var(--color-accent, Highlight); outline-offset: -2px; }
+.zar-root .zar-history-heading { min-width: 0; max-width: 100%; display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px 8px; }
+.zar-root .zar-history-title { flex: 1 1 140px; min-width: 0; font-weight: 600; line-height: 1.45; }
+.zar-root .zar-history-current { flex: 0 0 auto; padding: 1px 5px; border-radius: 4px; font-size: .76em; color: var(--accent-blue, LinkText); background: color-mix(in srgb, var(--accent-blue, Highlight) 10%, transparent); }
+.zar-root .zar-history-paper { display: block; margin-top: 5px; font-size: .85em; line-height: 1.45; color: var(--zar-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zar-root .zar-history-meta { min-width: 0; max-width: 100%; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 3px 10px; margin-top: 7px; font-size: .8em; color: var(--zar-muted); }
+.zar-root .zar-history-count { white-space: nowrap; }
+.zar-root .zar-history-preview { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; max-height: 3em; overflow: hidden; line-height: 1.5; margin-top: 8px; font-size: .92em; }
+.zar-root .zar-history-tools { display: flex; flex-wrap: wrap; min-width: 0; max-width: 100%; gap: 8px; padding: 6px 10px; border-top: 1px solid var(--zar-border); }
 .zar-root .zar-text-button { max-width: 100%; }
 .zar-root .zar-messages { flex: 1 1 0; min-height: 60px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding-inline: 1px; scrollbar-gutter: stable; }
 .zar-root .zar-empty { line-height: 1.65; padding: 20px 8px; color: var(--zar-muted); }
@@ -115,8 +129,6 @@
 .zar-root .zar-quote .zar-row { justify-content: space-between; margin-bottom: 5px; }
 .zar-root .zar-quote-input { min-height: 44px; max-height: 90px; overflow-y: auto; }
 .zar-root .zar-input { min-height: 72px; max-height: 140px; overflow-y: auto; }
-.zar-root .zar-history { max-height: 200px; overflow-y: auto; }
-.zar-root .zar-history-list { max-height: 110px; }
 .zar-root .zar-compose-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .zar-root .zar-compose-controls { display: flex; gap: 6px; margin-inline-start: auto; }
 .zar-root .zar-compose-controls button { min-width: 72px; }
