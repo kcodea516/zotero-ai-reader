@@ -41,7 +41,7 @@ Updates are installed manually using the same steps. Updating preserves local co
 
 ## Annotation agent preview
 
-Version `1.4.0-beta.1` adds an opt-in **Annotation agent** mode for the current PDF. This branch is a preview; the stable release remains 1.3.2. Automated tests pass, but installation and native annotation checks are pending.
+Version `1.4.0-beta.2` adds an opt-in **Annotation agent** mode for the current PDF. This branch is a preview; the stable release remains 1.3.2. Automated tests pass, but installation and native annotation checks are pending.
 
 1. Open a PDF and enable **Annotation agent** in the reading sidebar.
 2. Enter an instruction such as “Highlight the main design choices and explain why each matters.” The configured model receives text from the current PDF and proposes up to eight highlights or underlines with comments.
@@ -101,6 +101,8 @@ Short papers can be supplied in full. Longer papers use relevant pages and nearb
 Answers with retrieved evidence have a source list showing the actual papers and pages supplied for that round. A citation such as `[S1 p.4]` opens the corresponding local PDF page. Pages are counted from the first page of the PDF, which may differ from printed page numbers. Source titles wrap above a separate page-number row.
 
 ## Conversations and history
+
+Long user messages show a preview of about six lines, including quoted text. Use **Show more** and **Show less** to expand or collapse a message. Short messages and assistant answers remain fully visible. Copying, exporting, and sending conversation context always use the complete text.
 
 - Press Enter to send, Shift+Enter for a newline, or Cmd/Ctrl+Enter to send.
 - Select PDF text and choose **Ask AI** to add an editable quotation. Adding a quotation does not send a request.

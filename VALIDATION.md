@@ -4,6 +4,12 @@
 
 使用本机 macOS、Zotero 10.0.6 和 Translate for Zotero 2.4.8。1.0.0 的核心功能测试使用独立配置目录和测试文献；1.0.1 的原生控件检查在用户已安装插件的日常配置中进行。
 
+## 1.4.0-beta.2 user-message disclosure
+
+On 2026-10-21, TypeScript checks and all 109 existing automated tests passed. The beta XPI and native integration bundles built successfully. The sidebar fixture now includes checks for default clipping, expansion, collapse, complete-text copying and model input, language changes, draft preservation, and unchanged short messages and assistant responses. These new native checks have not been run; actual layout and interaction remain unverified until permission to operate Zotero is given.
+
+The disclosure changes presentation only. Saved messages, exported text, and the model conversation retain the full content. Expanded state lasts while the sidebar is mounted, including visits to conversation history. Each message observer and scheduled layout callback is disposed when its DOM is removed. No live provider call or Zotero interaction was used for this update.
+
 ## 1.4.0-beta.1 annotation prototype
 
 On 2026-10-21, TypeScript checks and all 109 automated tests passed. The XPI and six native integration fixtures compiled successfully. The 15 new tests cover PDF text matching, real-coordinate derivation, ambiguous quotations, malformed plans, selected writes, duplicate saves, rollback, comment escaping, edited-annotation protection, file changes, permissions, cancellation, retry, preview persistence, and empty plans. Tests use synthetic PDFs, fake Zotero items and an in-memory repository; no provider request or actual annotation write was made.

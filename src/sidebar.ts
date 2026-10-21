@@ -1,3 +1,4 @@
+import { mountMessageDisclosure } from './message-disclosure.ts';
 import { annotationMarkdown } from './annotations.ts';
 import type { Conversation, Host, Message, PaperScope, Quote } from './types.ts';
 import { renderMarkdown } from './render.ts';
@@ -44,9 +45,10 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   let renderedConversationId = '';
   const copyTimers = new Map<string, number>();
   const historyRendered = new Map<string, { root: HTMLElement; title: HTMLElement; paper: HTMLElement; time: HTMLTimeElement; preview: HTMLElement; count: HTMLElement; badge: HTMLElement }>();
+  const expandedMessages = new Set<string>();
   const annotationSelections = new Map<string, Set<string>>();
   const annotationActions = new Set<string>();
-  const rendered = new Map<string, { annotation: HTMLElement; root: HTMLElement; content: HTMLElement; signature: string; contentText: string | undefined; quoteRef: Quote | undefined; headerSignature: string; header: HTMLElement; quote: HTMLElement; error: HTMLElement; copy: HTMLButtonElement; feedback: HTMLElement; context: HTMLElement; sources: HTMLDetailsElement }>();
+  const rendered = new Map<string, { disclosure?: ReturnType<typeof mountMessageDisclosure>; annotation: HTMLElement; root: HTMLElement; content: HTMLElement; signature: string; contentText: string | undefined; quoteRef: Quote | undefined; headerSignature: string; header: HTMLElement; quote: HTMLElement; error: HTMLElement; copy: HTMLButtonElement; feedback: HTMLElement; context: HTMLElement; sources: HTMLDetailsElement }>();
   const root = el('div', 'zar-root zar-sidebar');
   root.setAttribute('aria-label', 'AI 阅读助手');
   const toolbar = el('div', 'zar-toolbar');
@@ -418,8 +420,18 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       const annotation = el('div', 'zar-annotation-plan'); annotation.hidden = true;
       const sources = el('details', 'zar-message-sources');
       sources.hidden = true;
-      messageRoot.append(header, quote, context, content, sources, annotation, error, actions);
-      entry = { annotation, root: messageRoot, content, signature: '', contentText: undefined, quoteRef: undefined, headerSignature: '', header, quote, error, copy, feedback, context, sources }; rendered.set(message.id, entry);
+      let disclosure: ReturnType<typeof mountMessageDisclosure> | undefined;
+      if (message.role === 'user') {
+        const viewport = el('div', 'zar-user-text');
+        const body = el('div', 'zar-user-text-body'); body.append(quote, content); viewport.append(body);
+        const expand = el('button', 'zar-message-expand');
+        disclosure = mountMessageDisclosure(viewport, body, expand, {
+          expanded: () => expandedMessages.has(message.id),
+          toggle: expanded => { if (expanded) expandedMessages.add(message.id); else expandedMessages.delete(message.id); },
+        });
+        messageRoot.append(header, context, viewport, expand, sources, annotation, error, actions);
+      } else messageRoot.append(header, quote, context, content, sources, annotation, error, actions);
+      entry = { disclosure, annotation, root: messageRoot, content, signature: '', contentText: undefined, quoteRef: undefined, headerSignature: '', header, quote, error, copy, feedback, context, sources }; rendered.set(message.id, entry);
     }
     const signature = JSON.stringify([language, message.status, message.error, message.modelName, message.endpointName, message.contextNotice, message.sources, message.annotationPlan, annotationActions.has(message.id), host.service.isBusy(current()?.id || '')]);
     if (entry.contentText !== message.content || entry.quoteRef !== message.quote || entry.signature !== signature) {
@@ -462,6 +474,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       entry.error.textContent = [statusLabel(message.status), message.error ? localizeError(message.error, language) : ''].filter(Boolean).join(' · ');
       entry.error.hidden = !entry.error.textContent;
     }
+    entry.disclosure?.update(language);
     return entry.root;
   }
   function render(): void {
@@ -507,7 +520,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     const keep = new Set(value.messages.map(message => message.id));
     for (const id of rendered.keys()) if (!keep.has(id)) {
       if (copyTimers.has(id)) win.clearTimeout(copyTimers.get(id));
-      copyTimers.delete(id); rendered.delete(id);
+      copyTimers.delete(id); rendered.get(id)?.disclosure?.destroy(); rendered.delete(id);
     }
     if (draft.value !== value.draft) draft.value = value.draft;
     draft.placeholder = annotationCheck.checked ? t('例如：标出核心设计，并用中文解释每处为什么重要', 'Highlight the main design choices and explain why each matters') : foreign ? t('继续这段会话…', 'Continue this chat…') : t('询问这篇文献…', 'Ask about this paper…');
@@ -577,7 +590,8 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     destroy() {
       destroyed = true; actionEpoch++; unsubscribe(); if (scheduled) clearTimeout(scheduled);
       for (const timer of copyTimers.values()) win.clearTimeout(timer);
-      copyTimers.clear(); annotationSelections.clear(); annotationActions.clear(); rendered.clear(); historyRendered.clear(); buttonLabels.clear(); root.remove(); void host.service.flush().catch(() => {});
+      for (const entry of rendered.values()) entry.disclosure?.destroy();
+      copyTimers.clear(); expandedMessages.clear(); annotationSelections.clear(); annotationActions.clear(); rendered.clear(); historyRendered.clear(); buttonLabels.clear(); root.remove(); void host.service.flush().catch(() => {});
     },
   };
 }

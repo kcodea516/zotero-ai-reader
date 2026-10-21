@@ -196,3 +196,11 @@
 .zar-root .zar-annotation-quote { border-inline-start: 3px solid; padding-inline-start: 8px; margin: 9px 0; font-size: .9em; white-space: pre-wrap; overflow-wrap: anywhere; }
 .zar-root .zar-annotation-comment { white-space: pre-wrap; overflow-wrap: anywhere; margin-block: 8px; line-height: 1.55; }
 .zar-root .zar-annotation-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-block: 8px; }
+
+/* Sent user text is clipped as a whole, including quoted passages. */
+.zar-root .zar-user-text-body { display: flow-root; min-width: 0; }
+.zar-root .zar-user-text-collapsed { max-height: var(--zar-user-preview-height, 9.6em); overflow: hidden; }
+.zar-root .zar-message-user .zar-message-quote { max-height: none; overflow: visible; }
+.zar-root .zar-message-expand { appearance: none; display: block; width: auto; min-width: 0; max-width: 100%; height: auto; min-height: 28px; max-height: none; padding: 3px 0; margin: 5px 0 0; border: 0; border-radius: 3px; background: transparent; color: inherit; font: inherit; font-size: .88em; line-height: 1.5; text-align: start; white-space: normal; cursor: pointer; }
+.zar-root .zar-message-expand:hover { text-decoration: underline; }
+.zar-root .zar-message-expand:focus-visible { outline: 2px solid var(--color-accent, Highlight); outline-offset: 2px; }

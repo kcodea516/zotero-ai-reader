@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.0-beta.2 (preview)
+
+- Collapse long user messages and quoted passages into a six-line preview with bilingual Show more and Show less controls.
+- Preserve expanded messages during streaming and language changes; keep the full text for copying, export, and model context.
+- Keep short messages and assistant answers fully visible. Native installation and layout checks remain pending.
+
 ## 1.4.0-beta.1 (preview)
 
 - Add an opt-in annotation mode that reads the current PDF and proposes highlights or underlines with explanatory comments.
