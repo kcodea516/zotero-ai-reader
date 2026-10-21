@@ -4,11 +4,17 @@
 
 使用本机 macOS、Zotero 10.0.6 和 Translate for Zotero 2.4.8。1.0.0 的核心功能测试使用独立配置目录和测试文献；1.0.1 的原生控件检查在用户已安装插件的日常配置中进行。
 
-## 1.4.0-beta.2 user-message disclosure
+## 1.4.0-beta.2 native verification
 
-On 2026-10-21, TypeScript checks and all 109 existing automated tests passed. The beta XPI and native integration bundles built successfully. The sidebar fixture now includes checks for default clipping, expansion, collapse, complete-text copying and model input, language changes, draft preservation, and unchanged short messages and assistant responses. These new native checks have not been run; actual layout and interaction remain unverified until permission to operate Zotero is given.
+On 2026-10-21, version 1.4.0-beta.2 was installed and enabled in Zotero 10.0.6 on macOS. Six native integration suites passed 224 checks: 61 sidebar, 38 paper reading, 36 history, 48 settings, 24 language, and 17 annotation preview checks. TypeScript checks and all 109 automated tests also passed.
 
-The disclosure changes presentation only. Saved messages, exported text, and the model conversation retain the full content. Expanded state lasts while the sidebar is mounted, including visits to conversation history. Each message observer and scheduled layout callback is disposed when its DOM is removed. No live provider call or Zotero interaction was used for this update.
+Sidebar checks exercised default clipping, expansion and collapse of long user messages, full-text copying and model context, language changes, and preservation of the next draft. Short messages and assistant answers stayed fully visible. The history and settings fixtures initially selected a hidden item-details pane that retained its size. After excluding hidden panes, all checks passed without a runtime plugin change.
+
+A separate synthetic PDF passed 11 native annotation checks using the installed adapter and a fake model response. The adapter located both passages, saved a highlight and an underline with comments, avoided duplicates on repeated save, and navigated to the original passage. Editing a saved comment blocked batch undo and preserved every annotation; restoring that fixture comment allowed undo to trash only the generated batch, leaving a control annotation untouched. Visual inspection confirmed that the highlight and underline covered the intended sentences. The full sequence was repeated for that inspection.
+
+Configuration and all existing conversations, including drafts, matched their pre-update digests. The original PDF tab was restored, and no test tab or overlay remained. Only disposable synthetic records were created; those documents were moved to Zotero Trash after testing. The tests sent no real model requests. Provider-specific annotation proposal quality and arbitrary PDF layouts remain outside this check.
+
+The reusable native fixture is `tests/zotero-native-annotations.integration.js`. Load it in Zotero's Run JavaScript sandbox with `Zotero` available, then call `AIReaderNativeAnnotationChecks.run(win, '/absolute/path/to/tests/fixtures/annotation-fixture.pdf')`. It creates its own document, uses a fake transport, and trashes that document in cleanup. UI fixtures are rebuilt with `npm run build:smoke`. The machine-readable result is in `docs/validation/2026-10-21-beta2.json`.
 
 ## 1.4.0-beta.1 annotation prototype
 

@@ -41,7 +41,7 @@ Updates are installed manually using the same steps. Updating preserves local co
 
 ## Annotation agent preview
 
-Version `1.4.0-beta.2` adds an opt-in **Annotation agent** mode for the current PDF. This branch is a preview; the stable release remains 1.3.2. Automated tests pass, but installation and native annotation checks are pending.
+Version `1.4.0-beta.2` adds an opt-in **Annotation agent** mode for the current PDF. This branch is a preview; the stable release remains 1.3.2. The preview has passed automated tests and native checks on macOS with Zotero 10.0.6; see [validation records](VALIDATION.md) for their scope.
 
 1. Open a PDF and enable **Annotation agent** in the reading sidebar.
 2. Enter an instruction such as “Highlight the main design choices and explain why each matters.” The configured model receives text from the current PDF and proposes up to eight highlights or underlines with comments.
@@ -51,7 +51,7 @@ Version `1.4.0-beta.2` adds an opt-in **Annotation agent** mode for the current 
 
 Positions are matched locally against PDF text; the model cannot supply executable code, Zotero item keys, or drawing coordinates. Repeated saves use batch tags to avoid duplicates. Previews and saved annotation references remain in local conversation history, and copying a response includes its quotations and comments.
 
-This preview annotates text in the current PDF only. It does not draw arbitrary circles, interpret figures, perform OCR, or annotate other papers. It reads at most 80 pages and 110,000 characters; skipped or omitted pages are disclosed. It uses Zotero reader internals that may change between versions. Keep the stable version for everyday use until the native checks are complete.
+This preview annotates text in the current PDF only. It does not draw arbitrary circles, interpret figures, perform OCR, or annotate other papers. It reads at most 80 pages and 110,000 characters; skipped or omitted pages are disclosed. It uses Zotero reader internals that may change between versions. This remains a preview while broader document layouts and model responses are evaluated.
 
 ## Interface language
 

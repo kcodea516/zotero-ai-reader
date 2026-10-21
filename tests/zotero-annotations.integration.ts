@@ -37,7 +37,7 @@ export async function runAnnotationChecks(win: Window): Promise<string[]> {
   try {
     await service.init(); await service.saveConfig(config);
     const conversation = service.forScope(scope);
-    const details = Array.from(doc.querySelectorAll('item-details')).find(n => n.getBoundingClientRect().width > 0);
+    const details = Array.from(doc.querySelectorAll('item-details')).find(n => n.getBoundingClientRect().width > 0 && win.getComputedStyle(n).visibility !== 'hidden');
     (details || doc.documentElement).append(overlay); panel = mountSidebar(overlay, scope, host); await pause();
     const find = <T extends Element>(selector: string): T => { const element = overlay.querySelector(selector); if (!element) throw new Error(`Missing ${selector}`); return element as T; };
     const button = (name: string) => { const node = Array.from(overlay.querySelectorAll<NativeButton>('button')).find(n => n.getAttribute('label') === name); if (!node) throw new Error(`Missing button ${name}`); return node; };

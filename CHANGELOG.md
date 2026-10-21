@@ -4,7 +4,8 @@
 
 - Collapse long user messages and quoted passages into a six-line preview with bilingual Show more and Show less controls.
 - Preserve expanded messages during streaming and language changes; keep the full text for copying, export, and model context.
-- Keep short messages and assistant answers fully visible. Native installation and layout checks remain pending.
+- Keep short messages and assistant answers fully visible.
+- Verify the installed preview on Zotero 10.0.6 with 224 native UI checks and 11 native annotation checks using a synthetic PDF and fake model responses.
 
 ## 1.4.0-beta.1 (preview)
 
