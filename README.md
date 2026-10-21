@@ -39,6 +39,20 @@ Screenshots show the actual plugin UI on macOS with a sample conversation and ex
 
 Updates are installed manually using the same steps. Updating preserves local conversations and endpoint settings. The plugin has been checked on macOS with Zotero 10.0.6; other platforms and versions have not been verified. See [validation records](VALIDATION.md) for the scope of the checks.
 
+## Annotation agent preview
+
+Version `1.4.0-beta.1` adds an opt-in **Annotation agent** mode for the current PDF. This branch is a preview; the stable release remains 1.3.2. Automated tests pass, but installation and native annotation checks are pending.
+
+1. Open a PDF and enable **Annotation agent** in the reading sidebar.
+2. Enter an instruction such as “Highlight the main design choices and explain why each matters.” The configured model receives text from the current PDF and proposes up to eight highlights or underlines with comments.
+3. Review the quoted passages and comments. **Show passage** opens the proposed position. Unmatched or ambiguous passages cannot be saved.
+4. Select the annotations to keep and click **Save selected annotations**. Planning alone does not write annotations.
+5. **Undo this batch** moves the saved annotations to Zotero Trash. If an annotation has been edited since saving, undo stops and preserves the batch.
+
+Positions are matched locally against PDF text; the model cannot supply executable code, Zotero item keys, or drawing coordinates. Repeated saves use batch tags to avoid duplicates. Previews and saved annotation references remain in local conversation history, and copying a response includes its quotations and comments.
+
+This preview annotates text in the current PDF only. It does not draw arbitrary circles, interpret figures, perform OCR, or annotate other papers. It reads at most 80 pages and 110,000 characters; skipped or omitted pages are disclosed. It uses Zotero reader internals that may change between versions. Keep the stable version for everyday use until the native checks are complete.
+
 ## Interface language
 
 Open **Settings** in the sidebar and choose **Chinese** or **English** under **Interface language**. The settings preview changes immediately; click **Save settings** to apply the language to the sidebar, history page, source labels, and status messages. The choice is saved across restarts. Existing installations keep Chinese until you change it.

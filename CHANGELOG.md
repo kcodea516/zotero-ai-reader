@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0-beta.1 (preview)
+
+- Add an opt-in annotation mode that reads the current PDF and proposes highlights or underlines with explanatory comments.
+- Verify quoted passages against local PDF coordinates, show a selectable preview, and save only the selected annotations.
+- Add batch undo with edit detection, repeated-save protection, and atomic batch writes.
+- Keep annotation previews in conversation history and include quotations and comments when copying or exporting.
+- Preserve the stable update feed when building a prerelease. Native installation and annotation checks are pending.
+
 ## 1.3.2
 
 - Add a looping activity bar along the bottom of the native Stop button while a response is being generated. The bar indicates activity without estimating completion.

@@ -1,3 +1,4 @@
+import { createZoteroAnnotationTools } from './zotero-annotations.ts';
 import { ChatService } from './core';
 import { ZoteroRepository, ZoteroSecretStore } from './platform';
 import { mountSidebar } from './sidebar';
@@ -253,9 +254,11 @@ export async function startup({ id = ADDON_ID, version = '', rootURI }: { id?: s
   const ownAddon = await AddonManager.getAddonByID(id);
   if (ownAddon) ownAddon.applyBackgroundUpdates = AddonManager.AUTOUPDATE_DISABLE;
   secretStore = new ZoteroSecretStore();
-  service = new ChatService(new ZoteroRepository(), secretStore, undefined, createZoteroPaperContextProvider());
+  const annotations = createZoteroAnnotationTools();
+  service = new ChatService(new ZoteroRepository(), secretStore, undefined, createZoteroPaperContextProvider(), annotations.plan);
   await service.init();
   host = {
+    annotations,
     service,
     secretStore,
     rootURI,

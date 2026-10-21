@@ -187,3 +187,12 @@
  .zar-root .zar-toolbar-actions { margin-inline-start: 0; }
  .zar-root .zar-compose-hint { width: 100%; }
 }
+
+/* Annotation agent previews use native actions and plain-text comments. */
+.zar-root .zar-annotation-mode { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
+.zar-root .zar-annotation-heading { font-weight: 600; margin-block: 10px; }
+.zar-root .zar-annotation-card { border: 1px solid var(--zar-border); border-radius: 6px; padding: 9px; margin-block: 9px; min-width: 0; }
+.zar-root .zar-annotation-choice { display: flex; align-items: start; gap: 6px; font-size: .9em; }
+.zar-root .zar-annotation-quote { border-inline-start: 3px solid; padding-inline-start: 8px; margin: 9px 0; font-size: .9em; white-space: pre-wrap; overflow-wrap: anywhere; }
+.zar-root .zar-annotation-comment { white-space: pre-wrap; overflow-wrap: anywhere; margin-block: 8px; line-height: 1.55; }
+.zar-root .zar-annotation-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-block: 8px; }

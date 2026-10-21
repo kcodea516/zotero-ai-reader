@@ -26,7 +26,8 @@ await writeFile(resolve(root,'addon/THIRD-PARTY-LICENSES.txt'),licenses.join('\n
 await mkdir(resolve(root,'build'),{recursive:true});
 execFileSync('python3',['-c',`import pathlib,zipfile\nr=pathlib.Path(${JSON.stringify(root)})\nwith zipfile.ZipFile(r/'build/zotero-ai-reader-${version}.xpi','w',zipfile.ZIP_DEFLATED) as z:\n for p in sorted((r/'addon').rglob('*')):\n  if p.is_file() and p.name != '.DS_Store':\n   info=zipfile.ZipInfo(str(p.relative_to(r/'addon')),date_time=(2020,1,1,0,0,0))\n   info.compress_type=zipfile.ZIP_DEFLATED\n   info.external_attr=0o100644 << 16\n   z.writestr(info,p.read_bytes())\n`]);
 const hash = createHash('sha256').update(await readFile(resolve(root, `build/zotero-ai-reader-${version}.xpi`))).digest('hex');
-await writeFile(resolve(root, 'updates.json'), JSON.stringify({ addons: {
+// Preview builds must not replace the stable update feed.
+if (!version.includes('-')) await writeFile(resolve(root, 'updates.json'), JSON.stringify({ addons: {
   [manifest.applications.zotero.id]: { updates: [{
     version,
     update_link: `https://github.com/kcodea516/zotero-ai-reader/releases/download/v${version}/zotero-ai-reader-${version}.xpi`,

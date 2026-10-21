@@ -4,6 +4,14 @@
 
 使用本机 macOS、Zotero 10.0.6 和 Translate for Zotero 2.4.8。1.0.0 的核心功能测试使用独立配置目录和测试文献；1.0.1 的原生控件检查在用户已安装插件的日常配置中进行。
 
+## 1.4.0-beta.1 annotation prototype
+
+On 2026-10-21, TypeScript checks and all 109 automated tests passed. The XPI and six native integration fixtures compiled successfully. The 15 new tests cover PDF text matching, real-coordinate derivation, ambiguous quotations, malformed plans, selected writes, duplicate saves, rollback, comment escaping, edited-annotation protection, file changes, permissions, cancellation, retry, preview persistence, and empty plans. Tests use synthetic PDFs, fake Zotero items and an in-memory repository; no provider request or actual annotation write was made.
+
+The installed Zotero 10.0.6 source was inspected to check reader page data, annotation fields, transaction behavior, and reader refresh methods. This source review does not confirm runtime behavior. The annotation fixture is prepared but has not been executed; the prototype has not been installed. Native layout, exact highlight placement, comments, and undo remain unverified. The existing Zotero installation and its annotations were not changed.
+
+To run the UI-only annotation fixture later, load `build/annotation-checks.js` in the same sandbox used for the sidebar checks below, then call `AIReaderAnnotationChecks.runAnnotationChecks(win)`. It uses fake annotation tools and memory-only history. Actual native annotation save and undo require a separate disposable PDF after permission to operate Zotero is given.
+
 ## 1.3.2 generation activity indicator
 
 On 2026-10-21, TypeScript checks and all 94 automated tests passed. Native integration checks passed on macOS with Zotero 10.0.6: 54 sidebar checks and 24 language checks. The sidebar fixture used simulated streaming, completion, cancellation, and failure with isolated memory storage; no provider requests were sent.

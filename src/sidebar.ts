@@ -1,3 +1,4 @@
+import { annotationMarkdown } from './annotations.ts';
 import type { Conversation, Host, Message, PaperScope, Quote } from './types.ts';
 import { renderMarkdown } from './render.ts';
 import { normalizeUserMessageColor, getUserMessageTextColor } from './appearance.ts';
@@ -43,7 +44,9 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   let renderedConversationId = '';
   const copyTimers = new Map<string, number>();
   const historyRendered = new Map<string, { root: HTMLElement; title: HTMLElement; paper: HTMLElement; time: HTMLTimeElement; preview: HTMLElement; count: HTMLElement; badge: HTMLElement }>();
-  const rendered = new Map<string, { root: HTMLElement; content: HTMLElement; signature: string; contentText: string | undefined; quoteRef: Quote | undefined; headerSignature: string; header: HTMLElement; quote: HTMLElement; error: HTMLElement; copy: HTMLButtonElement; feedback: HTMLElement; context: HTMLElement; sources: HTMLDetailsElement }>();
+  const annotationSelections = new Map<string, Set<string>>();
+  const annotationActions = new Set<string>();
+  const rendered = new Map<string, { annotation: HTMLElement; root: HTMLElement; content: HTMLElement; signature: string; contentText: string | undefined; quoteRef: Quote | undefined; headerSignature: string; header: HTMLElement; quote: HTMLElement; error: HTMLElement; copy: HTMLButtonElement; feedback: HTMLElement; context: HTMLElement; sources: HTMLDetailsElement }>();
   const root = el('div', 'zar-root zar-sidebar');
   root.setAttribute('aria-label', 'AI 阅读助手');
   const toolbar = el('div', 'zar-toolbar');
@@ -91,7 +94,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     if (!value) return;
     const content = [`# ${value.title}`, '', `${t('文献：', 'Paper: ')}${value.scope.title}`, '', ...value.messages.flatMap(message => [
       `## ${message.role === 'user' ? t('我', 'You') : 'AI'}${message.modelName ? ` · ${message.endpointName || ''} / ${message.modelName}` : ''}`,
-      '', ...(message.quote ? [`> ${message.quote.text.split('\n').join('\n> ')}`, ''] : []), message.content,
+      '', ...(message.quote ? [`> ${message.quote.text.split('\n').join('\n> ')}`, ''] : []), message.content + annotationMarkdown(message.annotationPlan),
       ...(message.status === 'complete' ? [] : [`\n[${statusLabel(message.status)}]`]), '',
     ])].join('\n');
     host.copy(content); actionError = '已复制当前会话。'; renderStatus();
@@ -102,6 +105,12 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   messages.setAttribute('aria-live', 'off');
   const empty = el('div', 'zar-empty');
   empty.append(el('p', '', '直接询问当前论文的章节、方法或实验，无需粘贴原文。'), el('p', '', '要对照其他论文，可在问题中写出简称或标题。也可以选中文字后点击“询问 AI”。'));
+  const annotationLabel = el('label', 'zar-annotation-mode');
+  const annotationCheck = el('input'); annotationCheck.type = 'checkbox';
+  const annotationLabelText = doc.createTextNode('标注 Agent');
+  annotationLabel.append(annotationCheck, annotationLabelText);
+  annotationLabel.hidden = !host.annotations;
+  paper.append(annotationLabel);
   const compose = el('div', 'zar-compose');
   const quoteBox = el('div', 'zar-quote');
   const quoteHeader = el('div', 'zar-row');
@@ -152,6 +161,8 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     historyQuery.placeholder = t('搜索对话', 'Search chats');
     historyQuery.setAttribute('aria-label', t('搜索对话内容与标题', 'Search chat contents and titles'));
     messages.setAttribute('aria-label', t('对话记录', 'Conversation messages'));
+    annotationLabelText.data = t('标注 Agent', 'Annotation agent');
+    annotationLabel.title = t('按指令生成当前 PDF 的高亮和注释预览，确认后才写入。', 'Draft highlights and comments for this PDF; save only after review.');
     empty.children[0].textContent = t('直接询问当前论文的章节、方法或实验，无需粘贴原文。', 'Ask about the current paper’s sections, methods, or experiments without pasting the original.');
     empty.children[1].textContent = t('要对照其他论文，可在问题中写出简称或标题。也可以选中文字后点击“询问 AI”。', 'Name another paper to compare it, or select a passage and choose “Ask AI”.');
     quoteInput.setAttribute('aria-label', t('本次提问引用，可编辑', 'Quoted passage for this question, editable'));
@@ -187,7 +198,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     if (!value || host.service.isBusy(value.id) || !(draft.value.trim() || value.quote?.text.trim())) return;
     if (!modelSelect.value) { actionError = '请先在设置中添加 API 和模型。'; renderStatus(); return; }
     host.service.setDraft(value.id, draft.value);
-    run(() => host.service.send(value.id));
+    run(() => host.service.send(value.id, annotationCheck.checked ? 'annotate' : undefined));
     render(); draft.focus();
   }
   function statusLabel(value: string): string {
@@ -296,6 +307,68 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     if (modelSelect.selectedIndex === -1) modelSelect.value = '';
     modelSelect.disabled = !config.models.length;
   }
+  function renderAnnotationPlan(container: HTMLElement, message: Message): void {
+    const plan = message.annotationPlan;
+    container.hidden = !plan;
+    container.replaceChildren();
+    if (!plan) return;
+    const conversation = current();
+    if (!conversation) return;
+    const disabled = !host.annotations || annotationActions.has(message.id) || host.service.isBusy(conversation.id);
+    let selected = annotationSelections.get(plan.id);
+    if (!selected) { selected = new Set(plan.items.filter(i => i.status === 'ready' && !plan.receipts.some(r => r.candidateID === i.id)).map(i => i.id)); annotationSelections.set(plan.id, selected); }
+    container.append(el('div', 'zar-annotation-heading', plan.undone ? t('本批标注已撤销', 'This annotation batch was undone') : t('标注预览', 'Annotation preview')));
+    for (const item of plan.items) {
+      const applied = plan.receipts.some(r => r.candidateID === item.id) && !plan.undone;
+      const card = el('div', 'zar-annotation-card');
+      const label = el('label', 'zar-annotation-choice');
+      const choose = el('input'); choose.type = 'checkbox'; choose.checked = !plan.undone && !applied && selected.has(item.id);
+      choose.disabled = disabled || applied || !!plan.undone || item.status !== 'ready';
+      choose.setAttribute('aria-label', t(`选择 PDF 第 ${item.page} 页标注`, `Select annotation on PDF page ${item.page}`));
+      choose.addEventListener('change', () => { if (choose.checked) selected!.add(item.id); else selected!.delete(item.id); updateApply(); });
+      const state = applied ? t('已写入', 'Saved') : item.status === 'missing' ? t('原句未找到', 'Passage not found') : item.status === 'ambiguous' ? t('存在多处匹配', 'Multiple matches') : t('已定位', 'Located');
+      label.append(choose, el('span', '', `PDF ${item.page} · ${item.type === 'underline' ? t('下划线', 'Underline') : t('高亮', 'Highlight')} · ${state}`));
+      const quote = el('blockquote', 'zar-annotation-quote', item.quote); quote.style.borderInlineStartColor = item.color;
+      const comment = el('div', 'zar-annotation-comment', item.comment);
+      card.append(label, quote, comment);
+      if (item.status === 'ready') {
+        const locate = nativeButton(doc, t('查看原文位置', 'Show passage'), () => {
+          void host.annotations?.locate(plan, item.id).catch(error => { actionError = error && typeof error === 'object' && typeof (error as { englishMessage?: unknown }).englishMessage === 'string' ? localizeError(error, language) : t('无法打开原文位置，请检查 PDF 后重试。', 'Could not open the passage. Check the PDF and retry.'); renderStatus(); });
+        });
+        locate.disabled = disabled; card.append(locate);
+      }
+      container.append(card);
+    }
+    const controls = el('div', 'zar-annotation-actions');
+    const apply = nativeButton(doc, t('写入所选标注', 'Save selected annotations'), () => { void act(false); });
+    function updateApply() { apply.disabled = disabled || !!plan!.undone || ![...selected!].some(id => plan!.items.some(i => i.id === id && i.status === 'ready') && !plan!.receipts.some(r => r.candidateID === id)); }
+    updateApply();
+    const undo = nativeButton(doc, t('撤销本批标注', 'Undo this batch'), () => { void act(true); });
+    undo.disabled = disabled; undo.hidden = !plan.receipts.length || !!plan.undone;
+    controls.append(apply, undo); container.append(controls);
+    if (!plan.items.length) container.append(el('p', 'zar-muted', t('没有找到适合此次要求的可标注原文，请换一个更具体的要求。', 'No passages were proposed. Try a more specific instruction.')));
+    async function act(revert: boolean) {
+      if (annotationActions.has(message.id) || !host.annotations || !conversation || !plan) return;
+      annotationActions.add(message.id); render();
+      try {
+        if (revert) {
+          await host.annotations.undo(plan);
+          host.service.updateAnnotationReceipts(conversation.id, message.id, plan.receipts, true);
+          actionError = t('本批标注已移入 Zotero 回收站。', 'This annotation batch was moved to Zotero Trash.');
+        } else {
+          const receipts = await host.annotations.apply(plan, [...selected!].filter(id => !plan.receipts.some(r => r.candidateID === id)));
+          const latest = host.service.getConversation(conversation.id)?.messages.find(m => m.id === message.id)?.annotationPlan;
+          const merged = [...(latest?.receipts || [])];
+          for (const receipt of receipts) if (!merged.some(r => r.candidateID === receipt.candidateID)) merged.push(receipt);
+          host.service.updateAnnotationReceipts(conversation.id, message.id, merged);
+          actionError = t(`已写入 ${receipts.length} 条高亮/下划线及注释。`, `Saved ${receipts.length} highlights/underlines and comments.`);
+        }
+        await host.service.flush();
+      } catch (error) {
+        actionError = error && typeof error === 'object' && typeof (error as { englishMessage?: unknown }).englishMessage === 'string' ? localizeError(error, language) : t('标注操作未完成，请检查 PDF 与文库权限后重试。', 'The annotation action could not be completed. Check PDF and library permissions, then retry.');
+      } finally { annotationActions.delete(message.id); render(); }
+    }
+  }
   function renderMessage(message: Message): HTMLElement {
     let entry = rendered.get(message.id);
     if (!entry) {
@@ -324,7 +397,8 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       const feedback = el('span', 'zar-copy-feedback');
       feedback.setAttribute('role', 'status');
       copy.addEventListener('click', () => {
-        const text = current()?.messages.find(value => value.id === message.id)?.content;
+        const latest = current()?.messages.find(value => value.id === message.id);
+        const text = latest ? latest.content + annotationMarkdown(latest.annotationPlan) : '';
         if (!text) return;
         try {
           host.copy(text);
@@ -341,12 +415,13 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       const context = el('div', 'zar-message-context zar-muted');
       const content = el('div', 'zar-markdown');
       const error = el('div', 'zar-message-error');
+      const annotation = el('div', 'zar-annotation-plan'); annotation.hidden = true;
       const sources = el('details', 'zar-message-sources');
       sources.hidden = true;
-      messageRoot.append(header, quote, context, content, sources, error, actions);
-      entry = { root: messageRoot, content, signature: '', contentText: undefined, quoteRef: undefined, headerSignature: '', header, quote, error, copy, feedback, context, sources }; rendered.set(message.id, entry);
+      messageRoot.append(header, quote, context, content, sources, annotation, error, actions);
+      entry = { annotation, root: messageRoot, content, signature: '', contentText: undefined, quoteRef: undefined, headerSignature: '', header, quote, error, copy, feedback, context, sources }; rendered.set(message.id, entry);
     }
-    const signature = JSON.stringify([language, message.status, message.error, message.modelName, message.endpointName, message.contextNotice, message.sources]);
+    const signature = JSON.stringify([language, message.status, message.error, message.modelName, message.endpointName, message.contextNotice, message.sources, message.annotationPlan, annotationActions.has(message.id), host.service.isBusy(current()?.id || '')]);
     if (entry.contentText !== message.content || entry.quoteRef !== message.quote || entry.signature !== signature) {
       entry.signature = signature; entry.contentText = message.content; entry.quoteRef = message.quote;
       const headerSignature = JSON.stringify([language, message.role, message.createdAt, message.modelName, message.endpointName]);
@@ -358,6 +433,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
         entry.header.replaceChildren(role, time);
         if (message.modelName) entry.header.append(el('span', 'zar-message-model', `${message.endpointName || 'API'} / ${message.modelName}`));
       }
+      renderAnnotationPlan(entry.annotation, message);
       entry.copy.disabled = !message.content;
       entry.copy.title = copyTimers.has(message.id) ? t('已复制', 'Copied') : t('复制消息原文', 'Copy message');
       entry.copy.setAttribute('aria-label', t('复制消息原文', 'Copy message'));
@@ -418,6 +494,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     const pinned = renderedConversationId !== value.id || messages.scrollHeight - messages.scrollTop - messages.clientHeight < 48;
     renderedConversationId = value.id;
     const foreign = !sameScope(value.scope, scope);
+    if (foreign) annotationCheck.checked = false;
     paperLabel.textContent = foreign ? t('正在查看其他文献的会话', 'Chat for another paper') : t('当前文献', 'Current paper');
     paperTitle.textContent = value.scope.title; paperTitle.title = value.scope.title;
     returnButton.hidden = !foreign;
@@ -433,7 +510,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       copyTimers.delete(id); rendered.delete(id);
     }
     if (draft.value !== value.draft) draft.value = value.draft;
-    draft.placeholder = foreign ? t('继续这段会话…', 'Continue this chat…') : t('询问这篇文献…', 'Ask about this paper…');
+    draft.placeholder = annotationCheck.checked ? t('例如：标出核心设计，并用中文解释每处为什么重要', 'Highlight the main design choices and explain why each matters') : foreign ? t('继续这段会话…', 'Continue this chat…') : t('询问这篇文献…', 'Ask about this paper…');
     const nextQuoteSignature = JSON.stringify([language, value.id, value.quote]);
     quoteBox.hidden = !value.quote;
     if (nextQuoteSignature !== quoteSignature) {
@@ -444,7 +521,11 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     const busy = host.service.isBusy(value.id);
     const reading = host.service.getReadingOptions(value.id);
     currentCheck.checked = reading.currentPaper; relatedCheck.checked = reading.relatedPapers;
-    currentCheck.disabled = busy; relatedCheck.disabled = busy;
+    annotationCheck.disabled = busy || !host.annotations || foreign;
+    annotationLabel.hidden = !host.annotations;
+    currentCheck.disabled = busy; relatedCheck.disabled = busy || annotationCheck.checked;
+    const sendLabel = annotationCheck.checked ? t('生成标注预览', 'Preview annotations') : t('发送', 'Send');
+    sendButton.setAttribute('label', sendLabel); sendButton.setAttribute('aria-label', sendLabel);
     sendButton.hidden = busy; stopButton.hidden = !busy; stopControl.hidden = !busy;
     nativeTooltip(stopButton, t('正在生成，点击停止', 'Generating; click to stop'));
     sendButton.disabled = !(value.draft.trim() || value.quote?.text.trim()) || !modelSelect.value;
@@ -463,6 +544,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     scheduled = setTimeout(() => { scheduled = undefined; render(); }, 90);
   };
   const unsubscribe = host.service.subscribe(schedule);
+  annotationCheck.addEventListener('change', () => render());
   modelSelect.addEventListener('command', () => { const value = current(); if (value) run(() => host.service.setModel(value.id, modelSelect.value)); });
   historyScope.addEventListener('command', () => { allHistory = historyScope.value === 'all'; render(); });
   historyQuery.addEventListener('input', () => { query = historyQuery.value; render(); });
@@ -482,7 +564,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       const changed = !sameScope(scope, nextScope);
       if (changed) prepareNavigation();
       scope = { ...nextScope };
-      if (changed) { conversationId = host.service.forScope(scope).id; actionError = ''; historySignature = ''; }
+      if (changed) { annotationCheck.checked = false; conversationId = host.service.forScope(scope).id; actionError = ''; historySignature = ''; }
       render();
     },
     addQuote(quote) {
@@ -495,7 +577,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     destroy() {
       destroyed = true; actionEpoch++; unsubscribe(); if (scheduled) clearTimeout(scheduled);
       for (const timer of copyTimers.values()) win.clearTimeout(timer);
-      copyTimers.clear(); rendered.clear(); historyRendered.clear(); buttonLabels.clear(); root.remove(); void host.service.flush().catch(() => {});
+      copyTimers.clear(); annotationSelections.clear(); annotationActions.clear(); rendered.clear(); historyRendered.clear(); buttonLabels.clear(); root.remove(); void host.service.flush().catch(() => {});
     },
   };
 }
