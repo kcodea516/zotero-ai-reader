@@ -1,0 +1,2 @@
+# Zotero 10 loads bootstrap.js and locale resources without chrome registration.
+# All add-on resources use the rootURI supplied by Zotero.

@@ -1,0 +1,20 @@
+{
+  "manifest_version": 2,
+  "name": "AI 阅读助手",
+  "version": "1.0.2",
+  "description": "在 Zotero 阅读侧栏使用自己配置的 API，与论文展开多轮对话。",
+  "author": "kcodea516 and contributors",
+  "icons": {
+    "48": "icons/chat.svg",
+    "96": "icons/chat.svg"
+  },
+  "applications": {
+    "zotero": {
+      "id": "ai-reader@local.codex",
+      "update_url": "https://raw.githubusercontent.com/kcodea516/zotero-ai-reader/main/updates.json",
+      "strict_min_version": "10.0.6",
+      "strict_max_version": "10.0.*"
+    }
+  },
+  "homepage_url": "https://github.com/kcodea516/zotero-ai-reader"
+}

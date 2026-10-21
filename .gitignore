@@ -1,0 +1,6 @@
+node_modules/
+build/
+addon/content/main.js
+addon/content/katex/
+*.xpi
+.DS_Store

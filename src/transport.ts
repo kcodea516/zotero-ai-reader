@@ -1,0 +1,147 @@
+import type { ChatRequest } from './types.ts';
+
+const CONNECT_TIMEOUT = 60_000;
+const IDLE_TIMEOUT = 120_000;
+
+/** Normalize either an API root, a versioned prefix, or the complete chat URL. */
+export function normalizeEndpoint(value: string): string {
+  let url: URL;
+  try { url = new URL(value.trim()); }
+  catch { throw new Error('API 地址无效，请填写完整的 http(s) 地址。'); }
+  if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
+    throw new Error('API 地址必须是 http(s) 地址，且不能包含用户名、密码、查询参数或锚点。');
+  }
+  let path = url.pathname.replace(/\/+$/, '');
+  if (!path) path = '/v1';
+  if (!path.endsWith('/chat/completions')) path += '/chat/completions';
+  url.pathname = path;
+  return url.href;
+}
+
+function statusError(status: number): Error {
+  if (status === 401 || status === 403) return new Error(`API 鉴权失败（${status}），请检查密钥及调用权限。`);
+  if (status === 404) return new Error('API 地址或模型不存在（404），请检查接口地址和模型 ID。');
+  if (status === 413) return new Error('问题或历史记录过长（413），请缩短内容或新建会话。');
+  if (status === 429) return new Error('API 请求受限（429），请稍后手动重试或检查额度。');
+  if (status >= 500) return new Error(`API 服务暂时不可用（${status}），请稍后手动重试。`);
+  return new Error(`API 请求失败（${status}），请检查接口配置、模型及上下文长度。`);
+}
+
+function completion(value: any, onText: (text: string) => void): { truncated?: boolean } {
+  if (value?.error) throw new Error('API 返回错误，请检查模型、额度及上下文长度。');
+  const choice = value?.choices?.[0];
+  if (!choice || typeof choice.message?.content !== 'string') throw new Error('API 返回格式不受支持，需要 Chat Completions 格式。');
+  if (choice.finish_reason === 'content_filter') throw new Error('API 未完成回答：内容被服务端过滤。');
+  onText(choice.message.content);
+  return choice.finish_reason === 'length' ? { truncated: true } : {};
+}
+
+/** A single request: no retries, cookies, SDK, or access to Zotero UI state. */
+export async function chatCompletion(request: ChatRequest): Promise<{ truncated?: boolean }> {
+  const url = normalizeEndpoint(request.endpoint.baseURL);
+  const controller = new AbortController();
+  let timedOut = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+  const abort = () => controller.abort();
+  const resetTimer = (delay: number) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => { timedOut = true; controller.abort(); }, delay);
+  };
+  request.signal.addEventListener('abort', abort, { once: true });
+  if (request.signal.aborted) controller.abort();
+  try {
+    resetTimer(CONNECT_TIMEOUT);
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', Accept: request.endpoint.stream ? 'text/event-stream, application/json' : 'application/json' };
+    if (request.key) headers.Authorization = `Bearer ${request.key}`;
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'POST', headers,
+        body: JSON.stringify({ model: request.model.model, messages: request.messages, stream: request.endpoint.stream }),
+        signal: controller.signal, credentials: 'omit', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer',
+      });
+    } catch {
+      if (controller.signal.aborted) throw new Error(timedOut ? 'API 连接或响应超时，请手动重试。' : '已停止生成。');
+      throw new Error('无法连接 API，请检查网络、地址和证书；接口重定向不受支持。');
+    }
+    if (!response.ok) throw statusError(response.status);
+    resetTimer(IDLE_TIMEOUT);
+    const contentType = response.headers.get('Content-Type') || '';
+    if (contentType.includes('application/json') || (!request.endpoint.stream && !contentType.includes('text/event-stream'))) {
+      let json: any;
+      try { json = await response.json(); }
+      catch {
+        if (controller.signal.aborted) throw new Error(timedOut ? 'API 响应超时，请手动重试。' : '已停止生成。');
+        throw new Error('API 返回了无效的 JSON。');
+      }
+      if (controller.signal.aborted) throw new Error(timedOut ? 'API 响应超时，请手动重试。' : '已停止生成。');
+      return completion(json, request.onText);
+    }
+    if (!response.body) throw new Error('API 没有返回可读取的响应。');
+    reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let eventLines: string[] = [];
+    let done = false;
+    let finished = false;
+    let truncated = false;
+    const dispatch = () => {
+      if (!eventLines.length || done) { eventLines = []; return; }
+      const data = eventLines.join('\n');
+      eventLines = [];
+      if (data.trim() === '[DONE]') { done = true; return; }
+      let value: any;
+      try { value = JSON.parse(data); }
+      catch { throw new Error('API 流式数据格式无效，请手动重试。'); }
+      if (value?.error) throw new Error('API 在生成过程中返回错误，请检查额度、模型及上下文长度。');
+      const choice = value?.choices?.find((item: any) => item.index === 0) ?? value?.choices?.[0];
+      if (!choice) return; // Usage-only event
+      if (typeof choice.delta?.content === 'string') request.onText(choice.delta.content);
+      if (choice.finish_reason === 'content_filter') throw new Error('API 未完成回答：内容被服务端过滤。');
+      if (choice.finish_reason != null) { finished = true; done = true; truncated ||= choice.finish_reason === 'length'; }
+    };
+    const line = (value: string) => {
+      if (!value) dispatch();
+      else if (value.startsWith('data:')) eventLines.push(value.slice(5).replace(/^ /, ''));
+    };
+    const consume = (final: boolean) => {
+      let start = 0;
+      for (let i = 0; i < buffer.length; i++) {
+        const char = buffer[i];
+        if (char !== '\r' && char !== '\n') continue;
+        if (char === '\r' && i === buffer.length - 1 && !final) break;
+        line(buffer.slice(start, i));
+        if (char === '\r' && buffer[i + 1] === '\n') i++;
+        start = i + 1;
+        if (done) break;
+      }
+      buffer = buffer.slice(start);
+      if (final && !done) {
+        if (buffer) line(buffer);
+        buffer = '';
+        dispatch();
+      }
+    };
+    try {
+      while (!done) {
+        const chunk = await reader.read();
+        if (controller.signal.aborted) throw new Error('aborted');
+        if (chunk.done) { buffer += decoder.decode(); consume(true); break; }
+        resetTimer(IDLE_TIMEOUT);
+        buffer += decoder.decode(chunk.value, { stream: true });
+        consume(false);
+      }
+    } catch (error) {
+      if (controller.signal.aborted) throw new Error(timedOut ? 'API 响应超时，请手动重试。' : '已停止生成。');
+      if (error instanceof Error && error.message.startsWith('API ')) throw error;
+      throw new Error('API 连接中断，请手动重试。');
+    }
+    if (!done && !finished) throw new Error('API 响应意外中断，已保留收到的文字，请手动重试。');
+    return truncated ? { truncated: true } : {};
+  } finally {
+    if (timer) clearTimeout(timer);
+    request.signal.removeEventListener('abort', abort);
+    if (reader) { try { await reader.cancel(); } catch {} }
+  }
+}

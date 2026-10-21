@@ -1,0 +1,138 @@
+/* Use Zotero's native XUL controls and editable-text, as the translation pane does. */
+.zar-root {
+  --zar-border: var(--fill-quarternary, color-mix(in srgb, currentColor 18%, transparent));
+  --zar-muted: var(--fill-secondary, color-mix(in srgb, currentColor 70%, transparent));
+  --zar-surface: var(--material-sidepane, transparent);
+  color: var(--fill-primary, inherit);
+  font: inherit;
+  font-size: var(--zotero-font-size, inherit);
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  color-scheme: inherit;
+}
+.zar-root *, .zar-root *::before, .zar-root *::after { box-sizing: border-box; }
+.zar-root [hidden] { display: none !important; }
+.zar-root.zar-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: clamp(360px, calc(100vh - 190px), 760px);
+  min-height: 0;
+  overflow: hidden;
+}
+.zar-sidebar > .zar-toolbar, .zar-sidebar > .zar-paper,
+.zar-sidebar > .zar-history, .zar-sidebar > .zar-compose { flex: 0 0 auto; }
+.zar-root .zar-native-button, .zar-root .zar-native-select, .zar-root input:not(.input) {
+  font-family: inherit;
+  font-size: inherit;
+  max-width: 100%;
+}
+.zar-root .zar-native-button {
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  white-space: nowrap;
+  cursor: default;
+}
+.zar-root .zar-native-select { margin: 0; min-width: 0; font-weight: normal; }
+.zar-root input:not(.input) { accent-color: var(--accent-blue, AccentColor); }
+.zar-root input:not(.input):not([type=checkbox]) {
+  background: var(--material-background, Field);
+  border: 1px solid var(--zar-border);
+  border-radius: 4px;
+  padding: 4px 6px;
+}
+.zar-root input:not(.input):focus-visible { outline: 1px solid var(--color-accent, Highlight); }
+/* Let Zotero draw the editable field's hover, focus and disabled states. */
+.zar-root .zar-editable { width: 100%; min-width: 0; line-height: 1.5; }
+.zar-root .zar-editable .input { min-width: 0; }
+.zar-root .zar-muted { color: var(--zar-muted); font-size: .92em; }
+.zar-root .zar-toolbar, .zar-root .zar-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.zar-root .zar-toolbar { flex-wrap: wrap; padding-block: 4px 8px; border-bottom: var(--material-border, 1px solid var(--zar-border)); }
+.zar-root .zar-model { width: 100%; min-width: 0; flex: 1 1 170px; }
+.zar-root .zar-toolbar-actions { display: flex; width: 100%; gap: 6px; }
+.zar-root .zar-toolbar-actions button { flex: 1; }
+.zar-root .zar-paper { padding-block: 8px; line-height: 1.45; border-bottom: var(--material-border, 1px solid var(--zar-border)); overflow-wrap: anywhere; }
+.zar-root .zar-paper strong { display: block; font-size: .95em; font-weight: 600; }
+.zar-root .zar-history { padding-block: 8px; border-bottom: 1px solid var(--zar-border); }
+.zar-root .zar-history .zar-row { margin-bottom: 6px; }
+.zar-root .zar-history input { flex: 1; min-width: 0; width: 100%; }
+.zar-root .zar-history-list { max-height: 230px; overflow: auto; }
+.zar-root .zar-history-item { padding: 6px 0; border-top: 1px solid var(--zar-border); }
+.zar-root .zar-history-item:first-child { border-top: 0; }
+.zar-root .zar-history-open { width: 100%; text-align: start; white-space: normal; overflow-wrap: anywhere; }
+.zar-root .zar-history-open .button-text { white-space: normal; overflow-wrap: anywhere; text-align: start; }
+.zar-root .zar-history-item[aria-current=true] .zar-history-open { font-weight: 600; }
+.zar-root .zar-history-meta { margin: 3px 5px; overflow-wrap: anywhere; }
+.zar-root .zar-history-tools { display: flex; gap: 6px; margin: 4px 5px 0; }
+.zar-root .zar-text-button { max-width: 100%; }
+.zar-root .zar-messages { flex: 1 1 0; min-height: 60px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding-inline: 1px; scrollbar-gutter: stable; }
+.zar-root .zar-empty { line-height: 1.65; padding: 20px 8px; color: var(--zar-muted); }
+.zar-root .zar-empty p { margin: 0 0 8px; }
+.zar-root .zar-message { padding: 10px; margin-block: 8px; border: 1px solid var(--zar-border); border-radius: 8px; background: var(--material-background, Canvas); overflow-wrap: anywhere; }
+.zar-root .zar-message-header { display: flex; align-items: start; flex-wrap: wrap; gap: 4px 8px; margin-bottom: 7px; font-size: .9em; color: var(--zar-muted); }
+.zar-root .zar-message-role { font-weight: 600; color: var(--fill-primary, inherit); }
+.zar-root .zar-message-actions { display: flex; align-items: center; gap: 6px; margin-top: 8px; min-height: 28px; }
+.zar-root .zar-message-copy { appearance: none; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 5px; margin: 0; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--zar-muted); cursor: pointer; }
+.zar-root .zar-message-copy svg { width: 18px; height: 18px; flex: none; }
+.zar-root .zar-message-copy:hover:not(:disabled) { background: color-mix(in srgb, currentColor 9%, transparent); color: var(--fill-primary, inherit); }
+.zar-root .zar-message-copy:focus-visible { outline: 2px solid var(--color-accent, Highlight); outline-offset: 1px; }
+.zar-root .zar-message-copy:disabled { opacity: .4; cursor: default; }
+.zar-root .zar-copy-feedback { font-size: .85em; color: var(--zar-muted); }
+.zar-root .zar-message-model { width: 100%; overflow-wrap: anywhere; }
+.zar-root .zar-message-error { font-size: .9em; margin-top: 8px; line-height: 1.5; white-space: pre-wrap; }
+.zar-root .zar-message-quote { border-inline-start: 2px solid var(--zar-border); padding-inline-start: 8px; margin: 0 0 8px; color: var(--zar-muted); white-space: pre-wrap; font-size: .92em; max-height: 130px; overflow: auto; }
+.zar-root .zar-markdown { line-height: 1.6; user-select: text; }
+.zar-root .zar-markdown > :first-child { margin-top: 0; }
+.zar-root .zar-markdown > :last-child { margin-bottom: 0; }
+.zar-root .zar-markdown p { margin-block: .6em; }
+.zar-root .zar-markdown h1, .zar-root .zar-markdown h2, .zar-root .zar-markdown h3 { font-size: 1.05em; margin: .85em 0 .4em; }
+.zar-root .zar-markdown h4, .zar-root .zar-markdown h5, .zar-root .zar-markdown h6 { font-size: 1em; }
+.zar-root .zar-markdown pre { overflow-x: auto; padding: 8px; border: 1px solid var(--zar-border); border-radius: 4px; white-space: pre; max-width: 100%; }
+.zar-root .zar-markdown code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .91em; }
+.zar-root .zar-markdown :not(pre) > code { padding: 1px 3px; background: var(--fill-quinary, color-mix(in srgb, currentColor 7%, transparent)); border-radius: 3px; }
+.zar-root .zar-markdown blockquote { margin-inline: 0; border-inline-start: 2px solid var(--zar-border); padding-inline-start: 8px; color: var(--zar-muted); }
+.zar-root .zar-markdown ul, .zar-root .zar-markdown ol { padding-inline-start: 1.5em; }
+.zar-root .zar-markdown table { border-collapse: collapse; display: block; max-width: 100%; overflow-x: auto; font-size: .95em; }
+.zar-root .zar-markdown th, .zar-root .zar-markdown td { border: 1px solid var(--zar-border); padding: 4px 6px; }
+.zar-root .zar-markdown a { color: var(--accent-blue, LinkText); text-decoration: underline; cursor: pointer; }
+.zar-root .katex-display { overflow-x: auto; overflow-y: hidden; padding-block: 3px; }
+.zar-root .zar-compose { padding-block: 8px 3px; border-top: var(--material-border, 1px solid var(--zar-border)); }
+.zar-root .zar-input-frame { border: 1px solid color-mix(in srgb, currentColor 28%, transparent); border-radius: 8px; padding: 5px; background: var(--material-background, Field); }
+.zar-root .zar-input-frame:focus-within { border-color: var(--color-accent, Highlight); }
+.zar-root .zar-quote { margin-bottom: 8px; border-bottom: var(--material-border, 1px solid var(--zar-border)); padding-block: 0 8px; }
+.zar-root .zar-quote .zar-row { justify-content: space-between; margin-bottom: 5px; }
+.zar-root .zar-quote-input { min-height: 44px; max-height: 90px; overflow-y: auto; }
+.zar-root .zar-input { min-height: 72px; max-height: 140px; overflow-y: auto; }
+.zar-root .zar-history { max-height: 200px; overflow-y: auto; }
+.zar-root .zar-history-list { max-height: 110px; }
+.zar-root .zar-compose-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.zar-root .zar-compose-controls { display: flex; gap: 6px; margin-inline-start: auto; }
+.zar-root .zar-compose-controls button { min-width: 72px; }
+.zar-root .zar-status { font-size: .9em; white-space: pre-wrap; line-height: 1.5; margin-top: 6px; overflow-wrap: anywhere; }
+.zar-root .zar-status:empty { display: none; }
+.zar-root .zar-settings { width: 100%; max-width: 800px; margin-inline: auto; }
+.zar-root.zar-settings-root { padding: 14px 18px; overflow-y: auto; height: 100%; }
+.zar-root .zar-settings h1 { font-size: 1.3em; margin: 0 0 10px; }
+.zar-root .zar-settings h2 { font-size: 1.08em; margin: 0 0 10px; }
+.zar-root .zar-settings p { line-height: 1.5; }
+.zar-root .zar-settings fieldset { margin: 14px 0; padding: 12px; border: 1px solid var(--zar-border); border-radius: 5px; min-width: 0; }
+.zar-root .zar-settings legend { padding-inline: 4px; font-weight: 600; }
+.zar-root .zar-field { display: flex; flex-direction: column; gap: 5px; margin-block: 9px; min-width: 0; }
+.zar-root .zar-field > span { font-size: .95em; }
+.zar-root .zar-field input:not(.input):not([type=checkbox]), .zar-root .zar-field .zar-native-select { width: 100%; }
+.zar-root .zar-settings-prompt { min-height: 100px; }
+.zar-root .zar-check { display: flex; align-items: center; gap: 7px; margin-block: 9px; }
+.zar-root .zar-endpoint { margin-bottom: 14px; }
+.zar-root .zar-endpoint-head { justify-content: space-between; flex-wrap: wrap; }
+.zar-root .zar-model-editor { border-top: 1px solid var(--zar-border); margin-top: 10px; padding-top: 8px; }
+.zar-root .zar-settings-actions { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; margin-block: 12px; }
+.zar-root .zar-saved-state { color: var(--zar-muted); font-size: .9em; }
+.zar-root .zar-settings-tip { font-size: .92em; color: var(--zar-muted); }
+.zar-root .zar-inline-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 420px) {
+ .zar-root .zar-inline-fields { grid-template-columns: 1fr; gap: 0; }
+ .zar-root.zar-settings-root { padding: 10px; }
+ .zar-root .zar-toolbar-actions { margin-inline-start: 0; }
+ .zar-root .zar-compose-hint { width: 100%; }
+}
