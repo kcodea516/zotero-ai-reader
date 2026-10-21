@@ -1,7 +1,7 @@
 <h1 align="center">Zotero AI Reader:<br />Chat with your papers, inside Zotero</h1>
 
 <p align="center">
-  <strong>Read and discuss your papers without leaving Zotero.</strong><br />
+  <strong>A native, simple sidebar for understanding papers.</strong><br />
   Ask about the paper you're reading, compare related work when needed, and open cited PDF pages.
 </p>
 
@@ -19,11 +19,21 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/kcodea516/zotero-ai-reader?color=555" alt="MIT license" /></a>
 </p>
 
-A bilingual reading assistant in the Zotero PDF sidebar, with configurable OpenAI-compatible Chat Completions endpoints. Continue conversations and switch models while keeping the paper open.
+Zotero AI Reader uses Zotero’s native controls to keep paper discussions in the PDF sidebar. Ask about the current paper, follow up in the same conversation, and open the cited pages. The interface supports Chinese and English, with your own OpenAI-compatible Chat Completions endpoint.
+
+## In use
+
+<p align="center">
+  <img src="docs/images/reading-sidebar.png" width="420" alt="Native Zotero reading sidebar with a blue user message, an explanation of a paper, a PDF-page citation, and a source card above the follow-up input" />
+</p>
+
+The sidebar keeps the follow-up input available below the conversation. Source cards identify the paper and PDF pages supplied for an answer. Other papers are searched only when needed and permitted.
+
+Screenshots show the actual plugin UI on macOS with a sample conversation and example endpoint. The sample answer and source metadata are illustrative; no live provider call was made for these images.
 
 ## Installation
 
-1. Download `zotero-ai-reader-1.3.0.xpi` from the [release page](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.0).
+1. Download `zotero-ai-reader-1.3.1.xpi` from the [release page](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.1).
 2. In Zotero, open **Tools → Plugins**, then choose **Install Plugin From File** from the gear menu.
 3. Select the XPI and open a PDF. Expand **AI Reader** in the right sidebar. When Translate for Zotero is installed, the assistant appears below the translation section.
 
@@ -51,6 +61,13 @@ http://127.0.0.1:1234/v1
 Replace these examples with your provider's address. Public endpoints must use HTTPS. HTTP is supported for local loopback addresses. URLs cannot contain credentials, query parameters, or fragments.
 
 The endpoint must support the Chat Completions `model`, `messages`, and `stream` fields. Native Responses, Anthropic Messages, and Gemini protocols require a compatible gateway. Endpoint cards start collapsed and show the name, host, and model count. Expand a card to edit details; adding an endpoint opens it automatically. Model and key drafts are retained when a card is collapsed. Multiple models can share an endpoint, and different endpoints can use separate keys. The connection test sends a short request to the selected provider and may incur usage charges; it does not create a conversation.
+
+<details>
+<summary>Settings: collapsed endpoints, interface language, and message color</summary>
+
+<img src="docs/images/settings.png" width="740" alt="AI Reader settings with an English language selector, a collapsed endpoint card, a full-width system prompt, and compact color controls" />
+
+</details>
 
 ## Current paper and on-demand library lookup
 
@@ -113,7 +130,7 @@ npm test
 npm run build
 ```
 
-The package is written to `build/zotero-ai-reader-1.3.0.xpi`. Source code is in `src/`, Zotero resources in `addon/`, and tests in `tests/`. The package includes local rendering libraries and fonts; installed users do not need Node.js. CI checks types, runs unit tests, builds the XPI, and uploads it as an artifact. Native Zotero integration fixtures are documented in [VALIDATION.md](VALIDATION.md).
+The package is written to `build/zotero-ai-reader-1.3.1.xpi`. Source code is in `src/`, Zotero resources in `addon/`, and tests in `tests/`. The package includes local rendering libraries and fonts; installed users do not need Node.js. CI checks types, runs unit tests, builds the XPI, and uploads it as an artifact. Native Zotero integration fixtures are documented in [VALIDATION.md](VALIDATION.md).
 
 ## Feedback and contribution
 

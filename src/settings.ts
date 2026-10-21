@@ -170,7 +170,7 @@ export function mountSettings(container: HTMLElement, host: Host): () => void {
         config.appearance = { userMessageColor: normalized }; color.value = normalized; showPreview(normalized);
       }
     }, '#eaf3ff');
-    hex.input.className = 'zar-user-message-color-value'; hex.input.pattern = '#[0-9a-fA-F]{6}';
+    hex.input.className = 'zar-user-message-color-value'; hex.input.size = 9; hex.input.maxLength = 7; hex.input.pattern = '#[0-9a-fA-F]{6}';
     const setColor = (value: string) => {
       const normalized = normalizeUserMessageColor(value);
       colorDraft = normalized; config.appearance = { userMessageColor: normalized };
@@ -180,7 +180,7 @@ export function mountSettings(container: HTMLElement, host: Host): () => void {
     color.addEventListener('change', () => setColor(color.value));
     const controls = el('div', 'zar-color-controls zar-appearance-controls'); controls.append(colorLabel, hex.field);
     const reset = button(t('恢复默认颜色', 'Reset color'), () => setColor(DEFAULT_USER_MESSAGE_COLOR), 'zar-text-button zar-reset-user-message-color');
-    appearance.append(controls, preview, reset, el('p', 'zar-muted', t('默认使用浅蓝色。预览仅在此处显示，保存设置后应用到对话；恢复颜色不会改动接口或模型。', 'The default is light blue. Preview changes here, then save to apply them to chats. Resetting the color does not change endpoints or models.')));
+    appearance.append(controls, preview, reset);
     return appearance;
   }
   function captureDrafts(): void {
@@ -245,7 +245,7 @@ export function mountSettings(container: HTMLElement, host: Host): () => void {
       language = config.language; languageDirty = true; dirty = true; statusText = ''; render();
     });
     languageField.append(el('span', '', t('界面语言', 'Interface language')), languageSelect);
-    content.append(languageField, el('p', 'zar-settings-tip', t('添加兼容 OpenAI Chat Completions 的接口，再配置可切换的模型。提问时会将已完成对话、本次引用和启用的原文发送到所选接口；允许按需联查后，仅在问题需要时检索其他论文。', 'Add an OpenAI-compatible Chat Completions endpoint and its models. Questions send completed chat turns, your quote, and enabled paper text to the selected endpoint. On-demand library permission retrieves other papers only when needed.')));
+    content.append(languageField);
     const endpoints = el('div'); config.endpoints.forEach((endpoint, index) => endpoints.append(renderEndpoint(endpoint, index)));
     const endpointHeading = el('div', 'zar-settings-heading'); endpointHeading.append(el('h2', '', t('接口与模型', 'Endpoints and models')), button(t('添加接口', 'Add endpoint'), () => {
       const nextEndpoint = { id: id('endpoint'), name: '', baseURL: '', stream: true };
@@ -265,8 +265,9 @@ export function mountSettings(container: HTMLElement, host: Host): () => void {
     const promptLabel = el('label', 'zar-field'); const prompt = nativeEditable(doc, 'zar-settings-prompt', t('系统提示词', 'System prompt'), 6, 16); prompt.value = config.systemPrompt;
     multilineKeys(prompt);
     prompt.addEventListener('input', () => { config.systemPrompt = prompt.value; markDirty(); }); editableControls.push(prompt);
-    promptLabel.append(el('span', '', t('系统提示词', 'System prompt')), prompt);
-    defaults.append(defaultLabel, el('div', 'zar-muted', t('默认模型用于新建会话；已有会话可在侧栏单独切换。', 'The default model is used for new chats. Existing chats can select a different model in the sidebar.')), promptLabel);
+    const promptFrame = el('div', 'zar-settings-prompt-frame'); promptFrame.append(prompt);
+    promptLabel.append(el('span', '', t('系统提示词', 'System prompt')), promptFrame);
+    defaults.append(defaultLabel, promptLabel);
     const actions = el('div', 'zar-settings-actions');
     saveButton = button(t('保存设置', 'Save settings'), () => { void save(); });
     testButton = button(t('测试默认模型', 'Test default model'), () => { void test(); });
@@ -281,7 +282,7 @@ export function mountSettings(container: HTMLElement, host: Host): () => void {
     actions.append(saveButton, testButton, reset, dirtyIndicator);
     status = el('div', 'zar-status'); status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
     const stop = nativeButton(doc, t('停止测试', 'Stop test'), () => testController?.abort()); stop.hidden = !testing;
-    content.append(defaults, renderAppearance(), actions, status, stop, el('p', 'zar-settings-tip', t('对话历史仅保存在本机。API Key 使用本机安全存储；若无法持久保存，插件会明确提示仅本次运行有效。测试只在点击按钮后发送，不会加入对话历史。', 'Chat history stays on this device. API keys use local secure storage; the plugin will warn if a key lasts only for this Zotero session. A connection test runs only when you click Test and is not added to chat history.')));
+    content.append(defaults, renderAppearance(), actions, status, stop);
     updateState();
   }
   function validate(): void {

@@ -149,7 +149,10 @@
 .zar-root .zar-field { display: flex; flex-direction: column; gap: 5px; margin-block: 9px; min-width: 0; }
 .zar-root .zar-field > span { font-size: .95em; }
 .zar-root .zar-field input:not(.input):not([type=checkbox]), .zar-root .zar-field .zar-native-select { width: 100%; }
-.zar-root .zar-settings-prompt { min-height: 100px; }
+.zar-root .zar-settings-prompt-frame { width: 100%; min-width: 0; padding: 6px; border: 1px solid var(--zar-border); border-radius: 5px; background: var(--material-background, Field); }
+.zar-root .zar-settings-prompt-frame:focus-within { border-color: var(--color-accent, Highlight); }
+.zar-root .zar-settings-prompt { display: grid; width: 100%; max-width: none; min-height: 100px; }
+.zar-root .zar-settings-prompt .input { display: block; width: 100%; max-width: none; min-width: 0; text-align: start; }
 .zar-root .zar-check { display: flex; align-items: center; gap: 7px; margin-block: 9px; }
 .zar-root .zar-endpoint { min-width: 0; max-width: 100%; margin-block: 12px; border: 1px solid var(--zar-border); border-radius: 8px; overflow: hidden; }
 .zar-root .zar-endpoint-summary { min-width: 0; max-width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px; cursor: pointer; list-style: none; background: color-mix(in srgb, currentColor 3%, transparent); }
@@ -160,11 +163,10 @@
 .zar-root .zar-endpoint-meta { display: block; margin-top: 4px; font-size: .85em; color: var(--zar-muted); line-height: 1.45; overflow-wrap: anywhere; }
 .zar-root .zar-endpoint-indicator { flex: 0 0 auto; color: var(--zar-muted); font-size: .85em; }
 .zar-root .zar-endpoint-body { min-width: 0; max-width: 100%; padding: 0 12px 12px; border-top: 1px solid var(--zar-border); }
-.zar-root .zar-color-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
-.zar-root .zar-color-controls > .zar-field:first-child { flex: 0 0 auto; }
-.zar-root .zar-color-controls > .zar-field:last-child { flex: 1 1 120px; }
-.zar-root input.zar-user-message-color { flex: none; width: 48px; height: 34px; min-width: 0; padding: 3px; cursor: pointer; }
-.zar-root input.zar-user-message-color-value { flex: 1 1 120px; width: 120px; min-width: 0; max-width: 100%; }
+.zar-root .zar-color-controls { display: flex; flex-wrap: wrap; align-items: start; gap: 12px; min-width: 0; }
+.zar-root .zar-color-controls > .zar-field { flex: 0 0 auto; width: auto; max-width: 100%; }
+.zar-root .zar-color-controls .zar-field input.zar-user-message-color { flex: none; width: 48px; height: 32px; min-height: 32px; max-height: 32px; min-width: 0; padding: 3px; cursor: pointer; }
+.zar-root .zar-color-controls .zar-field input.zar-user-message-color-value { flex: none; width: 10ch; min-width: 9ch; max-width: 12ch; height: 32px; min-height: 32px; max-height: 32px; }
 .zar-root .zar-color-preview-user { margin-top: 10px; padding: 10px; border: 1px solid var(--zar-border); border-radius: 8px; background: #eaf3ff; color: #000000; line-height: 1.5; overflow-wrap: anywhere; }
 .zar-root .zar-endpoint-head { justify-content: space-between; flex-wrap: wrap; }
 .zar-root .zar-model-editor { border-top: 1px solid var(--zar-border); margin-top: 10px; padding-top: 8px; }

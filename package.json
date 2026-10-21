@@ -1,6 +1,6 @@
 {
   "name": "zotero-ai-reader",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "private": true,
   "description": "Zotero AI reader with local paper context, cross-paper retrieval, and OpenAI-compatible APIs",
   "type": "module",
@@ -8,7 +8,8 @@
     "build": "node scripts/build.mjs",
     "test": "node --test --experimental-strip-types tests/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "build:smoke": "node scripts/build-smoke.mjs"
+    "build:smoke": "node scripts/build-smoke.mjs",
+    "build:showcase": "esbuild scripts/showcase.ts --bundle --format=iife --global-name=AIReaderShowcase --platform=browser --target=firefox140 --outfile=build/showcase.js"
   },
   "dependencies": {
     "dompurify": "3.4.17",

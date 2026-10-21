@@ -204,6 +204,17 @@ export async function runSettingsChecks(win: Window): Promise<string[]> {
     button('保存设置').doCommand(); await until('local drafts saved after external language update', () => service.getConfig().systemPrompt === externalPrompt);
     check('all local drafts survive save after external language update', service.getConfig().language === 'zh-CN' && service.getConfig().models.find(value => value.id === 'settings-model-a')?.name === 'Unsaved external-language draft' && service.getConfig().appearance?.userMessageColor === '#9faabb' && secretWrites.some(entry => entry.value === 'synthetic-external-language-key'));
     check('bilingual settings checks never change conversations or call the connection test', JSON.stringify(conversation.messages) === originalMessages && fakeAnswerCalls === 1);
+    check('redundant explanatory paragraphs are absent while the system prompt remains editable', !settingsMount.querySelector('.zar-settings-tip') && !!find<NativeEditable>('.zar-settings-prompt').ref);
+    for (const width of [304, 760]) {
+      overlay.style.width = `${width}px`; await pause();
+      const hex = find<HTMLInputElement>('.zar-user-message-color-value').getBoundingClientRect();
+      const picker = find<HTMLInputElement>('.zar-user-message-color').getBoundingClientRect();
+      const frame = find<HTMLElement>('.zar-settings-prompt-frame').getBoundingClientRect();
+      const editor = find<NativeEditable>('.zar-settings-prompt').ref!.getBoundingClientRect();
+      check(`color controls stay single-line and compact at ${width}px`, hex.width <= 150 && hex.height >= 24 && hex.height <= 40 && picker.width <= 60 && Math.abs(hex.height - picker.height) <= 1);
+      check(`system prompt fills its field with even padding at ${width}px`, editor.width >= frame.width - 20 && editor.left >= frame.left && editor.right <= frame.right + 1 && Math.abs((editor.left - frame.left) - (frame.right - editor.right)) <= 2);
+      check(`settings do not overflow horizontally at ${width}px`, find<HTMLElement>('.zar-settings-root').scrollWidth <= find<HTMLElement>('.zar-settings-root').clientWidth + 1);
+    }
     return checks;
   } finally {
     unmountSettings?.(); panel?.destroy(); overlay.remove(); await service.shutdown();

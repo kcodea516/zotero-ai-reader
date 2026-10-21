@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.1
+
+- Remove repeated explanatory paragraphs from Settings while keeping the editable system prompt and validation messages.
+- Make the color picker and hex input compact, with a fixed single-line height.
+- Expand the system prompt editor across its field with even padding.
+- Add README screenshots of the native reading sidebar and settings, using sample data.
+
 ## 1.3.0
 
 - Add Chinese and English interface selection in Settings, with an immediate preview and saved preference.

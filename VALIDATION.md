@@ -4,6 +4,16 @@
 
 使用本机 macOS、Zotero 10.0.6 和 Translate for Zotero 2.4.8。1.0.0 的核心功能测试使用独立配置目录和测试文献；1.0.1 的原生控件检查在用户已安装插件的日常配置中进行。
 
+## 1.3.1 settings layout and README screenshots
+
+On 2026-10-21, TypeScript checks and all 94 automated tests passed. The rebuilt plugin was installed in Zotero 10.0.6 on macOS. The native settings fixture passed 48 checks and the language fixture passed 24 checks, using isolated memory storage and simulated responses.
+
+At both 304- and 760-pixel container widths, the color picker and hex input stayed 32 pixels tall and the hex field stayed under 150 pixels wide. The prompt editor filled its frame with even horizontal padding, and settings had no horizontal overflow. The settings checks also covered saving and reopening, validation, language previews, and preservation of custom prompts and unsaved endpoint fields. Redundant help paragraphs are absent; the custom system prompt remains editable. No model requests were sent by these fixtures.
+
+The two README screenshots were captured from the real native components mounted in Zotero’s visible item-details container. They use a separate in-memory service, an example endpoint, a scripted answer, and illustrative source metadata. No private conversations, keys, or live provider responses were used. The screenshots demonstrate the interface, not answer accuracy or retrieval quality.
+
+The reusable source for these previews is `scripts/showcase.ts`. Run `npm run build:showcase`, load `build/showcase.js` with Zotero’s Run JavaScript tool, and call `AIReaderShowcase.mountShowcase(window, 'chat')` or `'settings'` in that script’s sandbox. The returned object has an asynchronous `close()` method to remove the preview and shut down its isolated service. It does not modify the installed assistant’s configuration or history.
+
 ## 1.3.0 interface language
 
 On 2026-10-21, TypeScript checks and all 94 automated tests passed. Five native integration fixtures passed all 187 checks on macOS with Zotero 10.0.6: 48 sidebar, 38 reading, 36 history, 41 settings, and 24 language checks.
