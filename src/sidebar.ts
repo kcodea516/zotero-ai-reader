@@ -123,7 +123,10 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   const retryButton = button('重试', () => { const value = current(); if (value) run(() => host.service.retry(value.id)); }, '', 'Retry');
   const sendButton = button('发送', () => submit(), '', 'Send');
   const stopButton = button('停止', () => { const value = current(); if (value) host.service.stop(value.id); }, '', 'Stop');
-  composeControls.append(retryButton, sendButton, stopButton); composeFooter.append(hint, composeControls);
+  const stopControl = el('div', 'zar-stop-control');
+  const stopProgress = el('span', 'zar-stop-progress'); stopProgress.setAttribute('aria-hidden', 'true');
+  stopControl.append(stopButton, stopProgress);
+  composeControls.append(retryButton, sendButton, stopControl); composeFooter.append(hint, composeControls);
   const status = el('div', 'zar-status'); status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
   compose.append(quoteBox, draftFrame, composeFooter, status);
   root.append(toolbar, paper, history, messages, compose); body.append(root);
@@ -442,7 +445,8 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     const reading = host.service.getReadingOptions(value.id);
     currentCheck.checked = reading.currentPaper; relatedCheck.checked = reading.relatedPapers;
     currentCheck.disabled = busy; relatedCheck.disabled = busy;
-    sendButton.hidden = busy; stopButton.hidden = !busy;
+    sendButton.hidden = busy; stopButton.hidden = !busy; stopControl.hidden = !busy;
+    nativeTooltip(stopButton, t('正在生成，点击停止', 'Generating; click to stop'));
     sendButton.disabled = !(value.draft.trim() || value.quote?.text.trim()) || !modelSelect.value;
     nativeTooltip(sendButton, modelSelect.value ? t('发送问题及本次引用', 'Send question and quoted passage') : t('请先在设置中添加 API 和模型', 'Add an API endpoint and model in Settings first.'));
     retryButton.disabled = !modelSelect.value;

@@ -4,6 +4,14 @@
 
 使用本机 macOS、Zotero 10.0.6 和 Translate for Zotero 2.4.8。1.0.0 的核心功能测试使用独立配置目录和测试文献；1.0.1 的原生控件检查在用户已安装插件的日常配置中进行。
 
+## 1.3.2 generation activity indicator
+
+On 2026-10-21, TypeScript checks and all 94 automated tests passed. Native integration checks passed on macOS with Zotero 10.0.6: 54 sidebar checks and 24 language checks. The sidebar fixture used simulated streaming, completion, cancellation, and failure with isolated memory storage; no provider requests were sent.
+
+The activity bar stayed inside the native Stop button at a 304-pixel sidebar width. It did not intercept pointer events, and its animation advanced during generation. Completion, cancellation, and failure hid the control and removed its active animation. The existing Stop action cancelled the simulated request. A reduced-motion media rule replaces the animation with a static bar; the fixture checks the branch selected by the system preference and does not toggle that preference.
+
+Version 1.3.2 was installed in the existing Zotero profile. Conversation drafts and non-secret configuration matched their pre-update values.
+
 ## 1.3.1 settings layout and README screenshots
 
 On 2026-10-21, TypeScript checks and all 94 automated tests passed. The rebuilt plugin was installed in Zotero 10.0.6 on macOS. The native settings fixture passed 48 checks and the language fixture passed 24 checks, using isolated memory storage and simulated responses.

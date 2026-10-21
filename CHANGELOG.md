@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.2
+
+- Add a looping activity bar along the bottom of the native Stop button while a response is being generated. The bar indicates activity without estimating completion.
+- Hide the indicator when generation completes, fails, or stops; use a static indicator when reduced motion is requested.
+
 ## 1.3.1
 
 - Remove repeated explanatory paragraphs from Settings while keeping the editable system prompt and validation messages.

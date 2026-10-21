@@ -137,6 +137,13 @@
 .zar-root .zar-compose-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .zar-root .zar-compose-controls { display: flex; gap: 6px; margin-inline-start: auto; }
 .zar-root .zar-compose-controls button { min-width: 72px; }
+.zar-root .zar-stop-control { position: relative; display: inline-flex; }
+.zar-root .zar-stop-progress { position: absolute; inset-inline: 9px; bottom: 3px; height: 2px; border-radius: 2px; overflow: hidden; pointer-events: none; background: color-mix(in srgb, var(--accent-blue, AccentColor) 16%, transparent); }
+.zar-root .zar-stop-progress::after { content: ''; display: block; width: 35%; height: 100%; border-radius: inherit; background: var(--accent-blue, AccentColor); animation: zar-generation-flow 1.3s ease-in-out infinite; }
+@keyframes zar-generation-flow { from { transform: translateX(-110%); } to { transform: translateX(310%); } }
+@media (prefers-reduced-motion: reduce) {
+ .zar-root .zar-stop-progress::after { animation: none; transform: none; width: 100%; opacity: .65; }
+}
 .zar-root .zar-status { font-size: .9em; white-space: pre-wrap; line-height: 1.5; margin-top: 6px; overflow-wrap: anywhere; }
 .zar-root .zar-status:empty { display: none; }
 .zar-root .zar-settings { width: 100%; max-width: 800px; margin-inline: auto; }

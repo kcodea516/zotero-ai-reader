@@ -33,7 +33,7 @@ Screenshots show the actual plugin UI on macOS with a sample conversation and ex
 
 ## Installation
 
-1. Download `zotero-ai-reader-1.3.1.xpi` from the [release page](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.1).
+1. Download `zotero-ai-reader-1.3.2.xpi` from the [release page](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.2).
 2. In Zotero, open **Tools → Plugins**, then choose **Install Plugin From File** from the gear menu.
 3. Select the XPI and open a PDF. Expand **AI Reader** in the right sidebar. When Translate for Zotero is installed, the assistant appears below the translation section.
 
@@ -130,7 +130,7 @@ npm test
 npm run build
 ```
 
-The package is written to `build/zotero-ai-reader-1.3.1.xpi`. Source code is in `src/`, Zotero resources in `addon/`, and tests in `tests/`. The package includes local rendering libraries and fonts; installed users do not need Node.js. CI checks types, runs unit tests, builds the XPI, and uploads it as an artifact. Native Zotero integration fixtures are documented in [VALIDATION.md](VALIDATION.md).
+The package is written to `build/zotero-ai-reader-1.3.2.xpi`. Source code is in `src/`, Zotero resources in `addon/`, and tests in `tests/`. The package includes local rendering libraries and fonts; installed users do not need Node.js. CI checks types, runs unit tests, builds the XPI, and uploads it as an artifact. Native Zotero integration fixtures are documented in [VALIDATION.md](VALIDATION.md).
 
 ## Feedback and contribution
 

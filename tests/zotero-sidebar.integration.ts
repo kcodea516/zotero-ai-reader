@@ -34,14 +34,15 @@ export async function runSidebarChecks(win: Window): Promise<string[]> {
     async save(value) { saved = JSON.parse(JSON.stringify(value)) as StoreState; },
   }, secrets, async request => {
     requests.push(request.messages.map(message => ({ ...message })));
-    if (requests.length === 1) {
+    if (requests.length === 1 || requests.length === 4) {
       request.onText(firstResponse);
       await new Promise<void>((resolve, reject) => {
         releaseFirst = resolve;
         request.signal.addEventListener('abort', () => reject(new Error('integration cancelled')), { once: true });
       });
       request.onText('\n\nFirst response completed.');
-    } else request.onText(`Synthetic response ${requests.length}.`);
+    } else if (requests.length === 5) throw new Error('Synthetic response failure.');
+    else request.onText(`Synthetic response ${requests.length}.`);
     return {};
   });
   const config: Config = {
@@ -106,6 +107,10 @@ export async function runSidebarChecks(win: Window): Promise<string[]> {
     const border = win.getComputedStyle(frame);
     check('unfocused question frame has visible border', !frame.contains(doc.activeElement) && parseFloat(border.borderTopWidth) > 0 && border.borderTopStyle !== 'none' && !['transparent', 'rgba(0, 0, 0, 0)'].includes(border.borderTopColor));
     visibleComposer('empty');
+    const stopControl = find<HTMLElement>('.zar-stop-control');
+    const stop = find<NativeButton>('.zar-stop-control button');
+    const progress = find<HTMLElement>('.zar-stop-progress');
+    check('generation indicator is hidden while idle', stopControl.hidden && stop.hidden && progress.getClientRects().length === 0);
 
     type('First question');
     check('native input event updates draft and send state', conversation.draft === 'First question' && !send.disabled);
@@ -113,6 +118,14 @@ export async function runSidebarChecks(win: Window): Promise<string[]> {
     check('Enter is handled as one send', firstEnter.defaultPrevented);
     await until('first streamed response', () => requests.length === 1 && conversation.messages[1]?.content.length > 0);
     visibleComposer('long streaming answer');
+    const progressRect = progress.getBoundingClientRect(), stopRect = stop.getBoundingClientRect();
+    check('streaming indicator fits inside the clickable native Stop button', !stopControl.hidden && !stop.hidden && !stop.disabled && stop.namespaceURI === 'http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul' && progressRect.height === 2 && progressRect.left > stopRect.left && progressRect.right < stopRect.right && progressRect.bottom <= stopRect.bottom && win.getComputedStyle(progress).pointerEvents === 'none' && progress.getAttribute('aria-hidden') === 'true');
+    const reducedMotion = win.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const animation = stopControl.getAnimations({ subtree: true })[0];
+    const initialTime = Number(animation?.currentTime);
+    await pause();
+    check('activity bar animates or respects reduced motion', reducedMotion ? win.getComputedStyle(progress, '::after').animationName === 'none' : animation?.playState === 'running' && Number(animation.currentTime) > initialTime);
+
     const log = find<HTMLElement>('.zar-messages');
     check('long answer scrolls inside message log', log.scrollHeight > log.clientHeight && win.getComputedStyle(log).overflowY === 'auto');
     check('composer node survives first render', draft.isConnected && draft.ref === input);
@@ -126,6 +139,7 @@ export async function runSidebarChecks(win: Window): Promise<string[]> {
     await until('first completion', () => !service.isBusy(conversation.id));
     check('next draft survives completion', conversation.draft === 'Second question' && input.value === 'Second question' && !send.disabled);
     visibleComposer('first completed answer');
+    check('completed response hides the indicator and ends its animation', stopControl.hidden && stop.hidden && stopControl.getAnimations({ subtree: true }).length === 0);
     key();
     await until('second completion', () => requests.length === 2 && !service.isBusy(conversation.id));
     check('second round carries completed prior context', JSON.stringify(requests[1].map(message => message.role)) === JSON.stringify(['system', 'user', 'assistant', 'user']) && requests[1][1].content === 'First question' && requests[1][2].content === `${firstResponse}\n\nFirst response completed.` && requests[1][3].content === 'Second question');
@@ -169,6 +183,14 @@ export async function runSidebarChecks(win: Window): Promise<string[]> {
     const thirdUserCopy = articles[4].querySelector<HTMLButtonElement>('.zar-message-copy');
     thirdUserCopy?.click();
     check('user message footer copies question content', copies.length === 2 && copies[1] === 'Third question\ncontinued');
+    type('Fourth question to stop'); send.doCommand();
+    await until('fourth response streams', () => requests.length === 4 && service.isBusy(conversation.id));
+    stop.doCommand();
+    await until('fourth response stops', () => !service.isBusy(conversation.id));
+    check('animated Stop still cancels generation and hides the indicator', conversation.messages.at(-1)?.status === 'stopped' && stopControl.hidden && stopControl.getAnimations({ subtree: true }).length === 0);
+    type('Fifth question to fail'); send.doCommand();
+    await until('fifth response fails', () => requests.length === 5 && !service.isBusy(conversation.id));
+    check('failed response also hides the indicator', conversation.messages.at(-1)?.status === 'error' && stopControl.hidden && stopControl.getAnimations({ subtree: true }).length === 0);
     return checks;
   } finally {
     releaseFirst?.();
