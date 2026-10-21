@@ -2,6 +2,7 @@ import MarkdownIt from 'markdown-it';
 import createDOMPurify from 'dompurify';
 import katex from 'katex';
 import type { PaperSource } from './types.ts';
+import { tr, type UILanguage } from './i18n.ts';
 
 const math = (source: string, displayMode: boolean): string => {
   try {
@@ -13,7 +14,10 @@ const math = (source: string, displayMode: boolean): string => {
 
 const md = new MarkdownIt({ html: false, breaks: true, linkify: false, typographer: false });
 // Images never initiate a network request while a response is being rendered.
-md.renderer.rules.image = (tokens, index) => md.utils.escapeHtml(`[图片：${tokens[index].content || '未加载'}]`);
+md.renderer.rules.image = (tokens, index, _options, env) => {
+  const language: UILanguage = env?.language === 'en-US' ? 'en-US' : 'zh-CN';
+  return md.utils.escapeHtml(tr(language, `[图片：${tokens[index].content || '未加载'}]`, `[Image: ${tokens[index].content || 'not loaded'}]`));
+};
 md.inline.ruler.before('escape', 'reader_math', (state, silent) => {
   const start = state.pos;
   const delimiter = state.src.startsWith('\\(', start) ? '\\(' : state.src[start] === '$' && state.src[start + 1] !== '$' ? '$' : '';
@@ -70,7 +74,7 @@ md.renderer.rules.reader_math_block = (tokens, index) => `${math(tokens[index].c
 const purifiers = new WeakMap<object, ReturnType<typeof createDOMPurify>>();
 
 /** Markdown and local KaTeX only. Every generated node is sanitized before insertion. */
-export function renderMarkdown(target: HTMLElement, content: string, openURL: (url: string) => void, sources: PaperSource[] = [], openSource?: (source: PaperSource, page?: number) => void): void {
+export function renderMarkdown(target: HTMLElement, content: string, openURL: (url: string) => void, sources: PaperSource[] = [], openSource?: (source: PaperSource, page?: number) => void, language: UILanguage = 'zh-CN'): void {
   const win = target.ownerDocument.defaultView!;
   let purifier = purifiers.get(win);
   if (!purifier) {
@@ -81,7 +85,7 @@ export function renderMarkdown(target: HTMLElement, content: string, openURL: (u
     const source = sources.find(entry => entry.id === id.toUpperCase() && entry.pages.includes(Number(page)));
     return source && openSource ? `[${source.id} · PDF ${page}](https://ai-reader.invalid/source/${source.id}/${page})` : original;
   });
-  const fragment = purifier.sanitize(md.render(cited), {
+  const fragment = purifier.sanitize(md.render(cited, { language }), {
     RETURN_DOM_FRAGMENT: true,
     USE_PROFILES: { html: true, mathMl: true, svg: true },
     FORBID_TAGS: ['img', 'iframe', 'video', 'audio', 'object', 'embed', 'style', 'script', 'form', 'input', 'button'],
@@ -96,7 +100,7 @@ export function renderMarkdown(target: HTMLElement, content: string, openURL: (u
       const source = sources.find(entry => entry.id === local[1] && entry.pages.includes(page));
       if (source && openSource) {
         anchor.setAttribute('href', '#');
-        anchor.title = `${source.title} · PDF 第 ${page} 页`;
+        anchor.title = tr(language, `${source.title} · PDF 第 ${page} 页`, `${source.title} · PDF page ${page}`);
         anchor.addEventListener('click', event => { event.preventDefault(); openSource(source, page); });
       } else anchor.removeAttribute('href');
       continue;

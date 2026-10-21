@@ -5,3 +5,16 @@ ai-reader-sidenav =
 ai-reader-settings =
     .tooltiptext = 接口与模型设置
 ai-reader-ask-selection = 询问 AI
+
+ai-reader-section-zh =
+    .label = AI 阅读助手
+ai-reader-section-en =
+    .label = AI Reader
+ai-reader-sidenav-zh =
+    .tooltiptext = AI 阅读助手
+ai-reader-sidenav-en =
+    .tooltiptext = AI Reader
+ai-reader-settings-zh =
+    .tooltiptext = 接口与模型设置
+ai-reader-settings-en =
+    .tooltiptext = API and model settings

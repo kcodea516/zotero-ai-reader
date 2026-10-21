@@ -1,11 +1,11 @@
 export interface EndpointConfig { id: string; name: string; baseURL: string; stream: boolean }
 export interface ModelConfig { id: string; endpointId: string; name: string; model: string }
-export interface Config { version: 1; endpoints: EndpointConfig[]; models: ModelConfig[]; defaultModelId: string; systemPrompt: string; appearance?: { userMessageColor: string } }
+export interface Config { version: 1; language?: import('./i18n.ts').UILanguage; endpoints: EndpointConfig[]; models: ModelConfig[]; defaultModelId: string; systemPrompt: string; appearance?: { userMessageColor: string } }
 export interface PaperScope { libraryID: number; itemKey: string; title: string }
 export interface ReadingOptions { currentPaper: boolean; relatedPapers: boolean }
 export interface PaperSource { id: string; title: string; libraryID: number; itemKey: string; attachmentKey: string; pages: number[]; totalPages: number; truncated: boolean }
 export interface PaperContext { text: string; sources: PaperSource[]; warning?: string }
-export interface PaperContextRequest { scope: PaperScope; question: string; previousQuestions: string[]; options: ReadingOptions; signal: AbortSignal }
+export interface PaperContextRequest { language?: import('./i18n.ts').UILanguage; scope: PaperScope; question: string; previousQuestions: string[]; options: ReadingOptions; signal: AbortSignal }
 export type PaperContextProvider = (request: PaperContextRequest) => Promise<PaperContext>;
 export interface Quote { text: string; pageLabel?: string; attachmentKey?: string }
 export type MessageStatus = 'complete' | 'streaming' | 'error' | 'stopped' | 'interrupted';

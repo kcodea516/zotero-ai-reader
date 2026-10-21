@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0
+
+- Add Chinese and English interface selection in Settings, with an immediate preview and saved preference.
+- Translate the sidebar, history page, settings, source labels, selection action, and status messages without rewriting saved conversations or custom prompts.
+- Preserve chat and endpoint drafts when switching languages, including during an active response.
+- Remove the persistent reading hint below the paper permissions.
+- Keep the README entirely in English.
+
 ## 1.2.0
 
 - Replace automatic related-paper attachment with on-demand library lookup. Enabling the option permits a model routing decision; other papers are read only when that decision calls for a search.

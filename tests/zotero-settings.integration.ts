@@ -2,7 +2,7 @@ import { ChatService } from '../src/core.ts';
 import { mountSettings } from '../src/settings.ts';
 import { mountSidebar } from '../src/sidebar.ts';
 import { DEFAULT_USER_MESSAGE_COLOR, getUserMessageTextColor } from '../src/appearance.ts';
-import type { NativeButton } from '../src/controls.ts';
+import type { NativeButton, NativeEditable, NativeSelect } from '../src/controls.ts';
 import type { Config, Host, PaperScope, SecretStore, StoreState } from '../src/types.ts';
 
 /** Native settings and chat UI with isolated fake endpoints and memory storage.
@@ -90,8 +90,13 @@ export async function runSettingsChecks(win: Window): Promise<string[]> {
     };
     const showChat = async (): Promise<void> => { settingsMount.hidden = true; chatMount.hidden = false; await pause(); };
     const showSettings = async (): Promise<void> => { chatMount.hidden = true; settingsMount.hidden = false; await pause(); };
+    const chooseLanguage = async (language: 'zh-CN' | 'en-US'): Promise<void> => {
+      const select = find<NativeSelect>('.zar-interface-language');
+      select.value = language; select.dispatchEvent(new realm.Event('command', { bubbles: true })); await pause();
+    };
     check('settings fixture inherits native item-details styles at 304px', !!activeDetails && overlay.closest('item-details') === activeDetails && Math.abs(overlay.getBoundingClientRect().width - 304) < 1);
     check('existing two endpoints start collapsed', endpoints().length === 2 && endpoints().every(element => !element.open));
+    check('old configurations default to Chinese settings UI', find<HTMLElement>('h1').textContent === 'AI 阅读助手设置' && find<NativeSelect>('.zar-interface-language').value === 'zh-CN');
     check('collapsed summaries identify host and model count', endpoints().every(element => !!element.querySelector('.zar-endpoint-summary')?.textContent?.includes('Synthetic API') && !!element.querySelector('.zar-endpoint-meta')?.textContent?.includes('invalid.example') && !!element.querySelector('.zar-endpoint-meta')?.textContent?.includes('1')));
     const colorInput = find<HTMLInputElement>('.zar-user-message-color');
     check('default user message color is light blue', colorInput.value.toLowerCase() === DEFAULT_USER_MESSAGE_COLOR);
@@ -150,6 +155,55 @@ export async function runSettingsChecks(win: Window): Promise<string[]> {
     check('304px settings layout has no horizontal overflow', settingsRoot.getBoundingClientRect().width <= overlay.getBoundingClientRect().width + 1 && settingsRoot.scrollWidth <= settingsRoot.clientWidth + 1 && endpoints().every(element => element.scrollWidth <= element.clientWidth + 1));
     check('fixture used one fake answer and never called connection Test', fakeAnswerCalls === 1);
     check('settings and appearance persist only in isolated memory', !!saved && (saved as StoreState).config.appearance?.userMessageColor === DEFAULT_USER_MESSAGE_COLOR);
+
+    // Preview another language with every kind of unsaved setting present.
+    first = endpoint('settings-endpoint-a');
+    if (!first.open) { first.querySelector<HTMLElement>('summary')!.click(); await pause(); }
+    const expandedBeforeLanguage = endpoints().map(element => [element.dataset.endpointId, element.open]);
+    input('.zar-endpoint-name-input', 'Draft API 名称', first);
+    input('.zar-endpoint-url-input', 'https://language-draft.invalid.example/v1', first);
+    input('.zar-model-name-input', 'Draft model 名称', first);
+    input('.zar-model-id-input', 'language-draft-model-id', first);
+    input('.zar-endpoint-key-input', 'synthetic-language-draft-key', first);
+    input('.zar-user-message-color', '#35516d');
+    const customPrompt = '保留我的提示词。\nKeep my custom prompt unchanged.';
+    const promptDraft = find<NativeEditable>('.zar-settings-prompt');
+    promptDraft.value = customPrompt; promptDraft.dispatchEvent(new realm.Event('input', { bubbles: true }));
+    const defaultDraft = find<NativeSelect>('.zar-default-model'); defaultDraft.value = 'settings-model-b';
+    defaultDraft.dispatchEvent(new realm.Event('command', { bubbles: true }));
+    await chooseLanguage('en-US');
+    check('English selection previews all settings labels before save', find<HTMLElement>('h1').textContent === 'AI Reader Settings' && find<HTMLElement>('.zar-language-field span').textContent === 'Interface language' && !!button('Add endpoint') && !!button('Save settings') && find<HTMLElement>('.zar-color-preview-user').textContent === 'Please explain this paper’s main mechanism.');
+    check('language preview preserves endpoint model and key drafts', endpoint('settings-endpoint-a').querySelector<HTMLInputElement>('.zar-endpoint-name-input')!.value === 'Draft API 名称' && endpoint('settings-endpoint-a').querySelector<HTMLInputElement>('.zar-endpoint-url-input')!.value === 'https://language-draft.invalid.example/v1' && endpoint('settings-endpoint-a').querySelector<HTMLInputElement>('.zar-model-name-input')!.value === 'Draft model 名称' && endpoint('settings-endpoint-a').querySelector<HTMLInputElement>('.zar-model-id-input')!.value === 'language-draft-model-id' && endpoint('settings-endpoint-a').querySelector<HTMLInputElement>('.zar-endpoint-key-input')!.value === 'synthetic-language-draft-key');
+    check('language preview preserves prompt color default model and expanded endpoint states', find<NativeEditable>('.zar-settings-prompt').value === customPrompt && find<HTMLInputElement>('.zar-user-message-color').value === '#35516d' && find<NativeSelect>('.zar-default-model').value === 'settings-model-b' && JSON.stringify(endpoints().map(element => [element.dataset.endpointId, element.open])) === JSON.stringify(expandedBeforeLanguage));
+    check('English settings fit the same narrow layout', find<HTMLElement>('.zar-settings-root').scrollWidth <= find<HTMLElement>('.zar-settings-root').clientWidth + 1 && endpoints().every(element => element.scrollWidth <= element.clientWidth + 1));
+    check('English preview does not persist language or send an API request', service.getConfig().language !== 'en-US' && fakeAnswerCalls === 1);
+    await chooseLanguage('zh-CN'); await chooseLanguage('en-US');
+    check('repeated language previews retain all unsaved fields', find<NativeEditable>('.zar-settings-prompt').value === customPrompt && endpoint('settings-endpoint-a').querySelector<HTMLInputElement>('.zar-endpoint-key-input')!.value === 'synthetic-language-draft-key');
+    input('.zar-user-message-color-value', 'invalid-color'); button('Save settings').doCommand(); await pause();
+    check('English validation failures are localized and do not save drafts', find<HTMLElement>('.zar-status').textContent?.includes('Enter a valid hex color') && service.getConfig().language !== 'en-US');
+    check('invalid hex drafts keep the last valid color preview', find<HTMLInputElement>('.zar-user-message-color').value === '#35516d' && find<HTMLInputElement>('.zar-user-message-color-value').value === 'invalid-color');
+    input('.zar-user-message-color-value', '#35516d'); button('Save settings').doCommand();
+    await until('English language and drafts saved', () => service.getConfig().language === 'en-US' && service.getConfig().systemPrompt === customPrompt);
+    check('Save persists language with the original custom settings', service.getConfig().endpoints.find(value => value.id === 'settings-endpoint-a')?.name === 'Draft API 名称' && service.getConfig().models.find(value => value.id === 'settings-model-a')?.model === 'language-draft-model-id' && service.getConfig().defaultModelId === 'settings-model-b' && service.getConfig().appearance?.userMessageColor === '#35516d' && secretWrites.some(entry => entry.value === 'synthetic-language-draft-key'));
+    check('successful English save clears password input and reports English status', endpoint('settings-endpoint-a').querySelector<HTMLInputElement>('.zar-endpoint-key-input')!.value === '' && find<HTMLElement>('.zar-status').textContent?.includes('Settings saved'));
+    unmountSettings(); unmountSettings = mountSettings(settingsMount, host); await pause();
+    check('reopened settings load the saved English preference', find<HTMLElement>('h1').textContent === 'AI Reader Settings' && find<NativeSelect>('.zar-interface-language').value === 'en-US' && find<NativeEditable>('.zar-settings-prompt').value === customPrompt);
+
+    // A saved language change from another settings instance must not erase this
+    // editor's unsaved non-language fields.
+    first = endpoint('settings-endpoint-a'); first.querySelector<HTMLElement>('summary')!.click(); await pause();
+    input('.zar-model-name-input', 'Unsaved external-language draft', first);
+    input('.zar-endpoint-key-input', 'synthetic-external-language-key', first);
+    input('.zar-user-message-color', '#9faabb');
+    const externalPrompt = `${customPrompt}\nUnsaved external-language prompt.`;
+    const externalPromptDraft = find<NativeEditable>('.zar-settings-prompt'); externalPromptDraft.value = externalPrompt;
+    externalPromptDraft.dispatchEvent(new realm.Event('input', { bubbles: true }));
+    const externallySaved = service.getConfig(); externallySaved.language = 'zh-CN'; await service.saveConfig(externallySaved); await pause();
+    check('saved language changes update an active settings editor', find<HTMLElement>('h1').textContent === 'AI 阅读助手设置' && find<NativeSelect>('.zar-interface-language').value === 'zh-CN');
+    check('external language updates keep local prompt key model color and open-state drafts', endpoint('settings-endpoint-a').open && endpoint('settings-endpoint-a').querySelector<HTMLInputElement>('.zar-model-name-input')!.value === 'Unsaved external-language draft' && endpoint('settings-endpoint-a').querySelector<HTMLInputElement>('.zar-endpoint-key-input')!.value === 'synthetic-external-language-key' && find<NativeEditable>('.zar-settings-prompt').value === externalPrompt && find<HTMLInputElement>('.zar-user-message-color').value === '#9faabb');
+    button('保存设置').doCommand(); await until('local drafts saved after external language update', () => service.getConfig().systemPrompt === externalPrompt);
+    check('all local drafts survive save after external language update', service.getConfig().language === 'zh-CN' && service.getConfig().models.find(value => value.id === 'settings-model-a')?.name === 'Unsaved external-language draft' && service.getConfig().appearance?.userMessageColor === '#9faabb' && secretWrites.some(entry => entry.value === 'synthetic-external-language-key'));
+    check('bilingual settings checks never change conversations or call the connection test', JSON.stringify(conversation.messages) === originalMessages && fakeAnswerCalls === 1);
     return checks;
   } finally {
     unmountSettings?.(); panel?.destroy(); overlay.remove(); await service.shutdown();

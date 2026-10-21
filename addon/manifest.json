@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "AI 阅读助手",
-  "version": "1.2.0",
-  "description": "自动读取论文原文、联查 Zotero 文献并带页码引用的多轮 AI 阅读助手。",
+  "name": "Zotero AI Reader",
+  "version": "1.3.0",
+  "description": "A bilingual Zotero sidebar assistant with paper context, on-demand library lookup, and PDF citations.",
   "author": "kcodea516 and contributors",
   "icons": {
     "48": "icons/chat.svg",

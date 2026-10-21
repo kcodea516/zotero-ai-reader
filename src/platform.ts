@@ -1,3 +1,4 @@
+import { bilingualError } from './i18n-errors.ts';
 import type { Repository, SecretStore, StoreState } from './types';
 
 const SECRET_ORIGIN = 'chrome://ai-reader';
@@ -18,7 +19,7 @@ export class ZoteroRepository implements Repository {
     try {
       return JSON.parse(await IOUtils.readUTF8(this.statePath)) as StoreState;
     } catch {
-      throw new Error('无法读取 AI 对话记录。原文件已保留。');
+      throw bilingualError('无法读取 AI 对话记录。原文件已保留。', "AI conversation history could not be read. The original file has been preserved.");
     }
   }
 
@@ -49,7 +50,7 @@ export class ZoteroSecretStore implements SecretStore {
       if (!Zotero.OSKeyStore.isEncrypted(entry.password)) throw new Error('Unexpected credential format');
       return await Zotero.OSKeyStore.decrypt(entry.password);
     } catch {
-      throw new Error('无法解锁此接口的 API Key，请在设置中重新输入。');
+      throw bilingualError('无法解锁此接口的 API Key，请在设置中重新输入。', "The API key for this endpoint could not be unlocked. Enter it again in Settings.");
     }
   }
 
@@ -79,7 +80,7 @@ export class ZoteroSecretStore implements SecretStore {
     try {
       for (const entry of await this.find(endpointId)) Services.logins.removeLogin(entry);
     } catch {
-      throw new Error('无法从安全存储删除此接口的 API Key。');
+      throw bilingualError('无法从安全存储删除此接口的 API Key。', "The API key for this endpoint could not be deleted from secure storage.");
     }
   }
 

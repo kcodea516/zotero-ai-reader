@@ -1,3 +1,5 @@
+import { tr, type UILanguage } from './i18n.ts';
+import { ERROR_TRANSLATIONS } from './i18n-errors.ts';
 import type { PaperContext, PaperSource } from './types';
 
 export interface PaperRecord {
@@ -217,14 +219,15 @@ function material(document: PaperDocument, id: string, budget: number, question:
 }
 
 /** Build a bounded JSON document payload; content is evidence, never instructions. */
-export function buildPaperContext(current?: PaperDocument, related: PaperDocument[] = [], question = ''): PaperContext {
+export function buildPaperContext(current?: PaperDocument, related: PaperDocument[] = [], question = '', language: UILanguage = 'zh-CN'): PaperContext {
+  const notice = (text: string) => tr(language, text, ERROR_TRANSLATIONS.find(([chinese]) => chinese === text)?.[1] || text);
   const materials: Material[] = [];
   const warnings: string[] = [];
   if (current) {
     const extracted = material(current, 'S1', 90000, question, true);
     if (extracted) materials.push(extracted);
-    else warnings.push('当前文献没有可提取的正文（可能是扫描件或尚未完成文字识别）。');
-  } else warnings.push('未读取到当前文献正文。');
+    else warnings.push(notice('当前文献没有可提取的正文（可能是扫描件或尚未完成文字识别）。'));
+  } else warnings.push(notice('未读取到当前文献正文。'));
   const seen = new Set(current ? [`${current.paper.libraryID}:${current.paper.itemKey}`] : []);
   const relatedQuestion = `${question}\n${current?.paper.title || ''}`;
   for (const document of related.slice(0, 3)) {
@@ -233,9 +236,9 @@ export function buildPaperContext(current?: PaperDocument, related: PaperDocumen
     seen.add(identity);
     const extracted = material(document, `S${materials.filter(entry => entry.source.id !== 'S1').length + 2}`, 12000, relatedQuestion, true);
     if (extracted) materials.push(extracted);
-    else warnings.push(`关联文献“${document.paper.title}”没有可提取的正文。`);
+    else warnings.push(tr(language, `关联文献“${document.paper.title}”没有可提取的正文。`, `The related paper “${document.paper.title}” has no extractable text.`));
   }
-  if (materials.some(entry => entry.source.truncated)) warnings.push('部分文献仅提供了相关页摘录，未覆盖的内容不能视为已经阅读。');
+  if (materials.some(entry => entry.source.truncated)) warnings.push(notice('部分文献仅提供了相关页摘录，未覆盖的内容不能视为已经阅读。'));
   if (!materials.length) return { text: '', sources: [], warning: warnings.join(' ') };
   const payload = {
     kind: 'zotero-local-paper-evidence',

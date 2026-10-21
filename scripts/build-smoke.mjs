@@ -38,4 +38,13 @@ await build({
   target: 'firefox140',
   outfile: resolve(root, 'build/settings-checks.js'),
 });
-console.log('Built sidebar, reading, history and settings checks for Zotero Run JavaScript');
+await build({
+  entryPoints: [resolve(root, 'tests/zotero-language.integration.ts')],
+  bundle: true,
+  format: 'iife',
+  globalName: 'AIReaderLanguageChecks',
+  platform: 'browser',
+  target: 'firefox140',
+  outfile: resolve(root, 'build/language-checks.js'),
+});
+console.log('Built sidebar, reading, history, settings and language checks for Zotero Run JavaScript');

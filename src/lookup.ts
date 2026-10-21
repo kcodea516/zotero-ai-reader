@@ -1,3 +1,5 @@
+import { getLanguage, tr, type UILanguage } from './i18n.ts';
+import { bilingualError } from './i18n-errors.ts';
 import type { ChatTransport, EndpointConfig, ModelConfig, PaperContext, PaperScope } from './types.ts';
 
 export interface LibraryLookupDecision { lookup: boolean; query: string; notice?: string }
@@ -10,6 +12,7 @@ export interface LibraryLookupRequest {
   question: string;
   previousQuestions: string[];
   currentContext?: PaperContext;
+  language?: UILanguage;
   signal: AbortSignal;
 }
 
@@ -27,12 +30,12 @@ const ROUTING_PROMPT = `${LIBRARY_LOOKUP_MARKER}
 lookup 必须为布尔值。无需检索时 query 必须为空字符串；需要时 query 应简洁、针对其他论文，最多 300 字符。`;
 
 function cancelled(): Error {
-  const error = new Error('已停止生成。');
+  const error = bilingualError('已停止生成。', "Generation stopped.");
   error.name = 'AbortError';
   return error;
 }
 
-function closed(): LibraryLookupDecision { return { lookup: false, query: '', notice: CLOSED_NOTICE }; }
+function closed(language: UILanguage): LibraryLookupDecision { return { lookup: false, query: '', notice: tr(language, CLOSED_NOTICE, 'Could not determine whether library lookup was needed; no other papers were searched this round.') }; }
 
 function parseDecision(text: string): LibraryLookupDecision | undefined {
   let json = text.trim();
@@ -53,6 +56,7 @@ function parseDecision(text: string): LibraryLookupDecision | undefined {
 /** Decide before any other-library metadata or PDFs are read. Permission is checked by the caller. */
 export async function decideLibraryLookup(input: LibraryLookupRequest): Promise<LibraryLookupDecision> {
   if (input.signal.aborted) throw cancelled();
+  const language = getLanguage(input);
   // Snapshot inputs before yielding so switching the model, paper, or conversation
   // cannot change a routing request already in progress.
   const transport = input.transport;
@@ -94,11 +98,11 @@ export async function decideLibraryLookup(input: LibraryLookupRequest): Promise<
       aborted,
     ]);
     if (signal.aborted) throw cancelled();
-    if (overflow || response.truncated) return closed();
-    return parseDecision(result) || closed();
+    if (overflow || response.truncated) return closed(language);
+    return parseDecision(result) || closed(language);
   } catch {
     if (signal.aborted) throw cancelled();
-    return closed();
+    return closed(language);
   } finally {
     finished = true;
     clearTimeout(timer);

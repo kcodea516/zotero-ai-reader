@@ -4,6 +4,18 @@
 
 使用本机 macOS、Zotero 10.0.6 和 Translate for Zotero 2.4.8。1.0.0 的核心功能测试使用独立配置目录和测试文献；1.0.1 的原生控件检查在用户已安装插件的日常配置中进行。
 
+## 1.3.0 interface language
+
+On 2026-10-21, TypeScript checks and all 94 automated tests passed. Five native integration fixtures passed all 187 checks on macOS with Zotero 10.0.6: 48 sidebar, 38 reading, 36 history, 41 settings, and 24 language checks.
+
+Language checks exercised Chinese-to-English and English-to-Chinese changes while preserving the composer input node, unsent questions, quotations, message scroll position, history search and scope, the active history card, and original paper and message text. Switching languages during a simulated streaming response kept that request active and preserved the next question's draft. Source titles still wrapped above their page labels at a 304-pixel sidebar width.
+
+Settings checks covered immediate language preview, repeated toggles with unsaved endpoint, model, key, prompt, and color fields, English validation errors, saving and reopening settings, and applying a language saved elsewhere without losing local drafts. These fixtures used isolated memory storage and simulated responses; they did not send real model requests or change the user's endpoints or keys.
+
+The installed plugin was also checked against the existing profile. Drafts survived the update, the actual sidebar and native section header switched to English, and the native preferences entry and settings content displayed English. Choosing Chinese in the actual settings selector and clicking Save settings restored the Chinese labels. The original interface language was restored after inspection; other saved configuration fields were unchanged. The persistent hint below the reading permissions is absent.
+
+The README contains no Chinese text. UI language changes do not translate saved conversations, paper titles, or custom system prompts. Backend routing and grounding prompts retain their existing behavior.
+
 ## 1.2.0 on-demand lookup and source layout
 
 TypeScript checks and all 81 automated tests passed on 2026-10-21. Coverage includes the separate routing request, current-paper-only decisions, explicit comparisons, no carryover of retrieved PDF text into a later ordinary question, disabled permissions, malformed routing output, cancellation, and preservation of current-paper evidence when lookup fails. Explicitly named papers are not padded with broadly related matches.

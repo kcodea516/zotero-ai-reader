@@ -3,9 +3,9 @@
     "ai-reader@local.codex": {
       "updates": [
         {
-          "version": "1.2.0",
-          "update_link": "https://github.com/kcodea516/zotero-ai-reader/releases/download/v1.2.0/zotero-ai-reader-1.2.0.xpi",
-          "update_hash": "sha256:70f2bceaf9033012ba5e31056337de4c898fd532ea4c1400aa285cf0fc85aa1d",
+          "version": "1.3.0",
+          "update_link": "https://github.com/kcodea516/zotero-ai-reader/releases/download/v1.3.0/zotero-ai-reader-1.3.0.xpi",
+          "update_hash": "sha256:e2c51937d89a238372642d89cec9eace9030aded1ee556e831d3af5759d0bf4f",
           "applications": {
             "zotero": {
               "strict_min_version": "10.0.6",

@@ -1,3 +1,4 @@
+import { bilingualError } from './i18n-errors.ts';
 import type { ChatRequest } from './types.ts';
 
 const CONNECT_TIMEOUT = 60_000;
@@ -7,9 +8,9 @@ const IDLE_TIMEOUT = 120_000;
 export function normalizeEndpoint(value: string): string {
   let url: URL;
   try { url = new URL(value.trim()); }
-  catch { throw new Error('API 地址无效，请填写完整的 http(s) 地址。'); }
+  catch { throw bilingualError('API 地址无效，请填写完整的 http(s) 地址。', "The API address is invalid. Enter a complete HTTP(S) URL."); }
   if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
-    throw new Error('API 地址必须是 http(s) 地址，且不能包含用户名、密码、查询参数或锚点。');
+    throw bilingualError('API 地址必须是 http(s) 地址，且不能包含用户名、密码、查询参数或锚点。', "The API URL must use HTTP(S) and must not contain credentials, query parameters, or fragments.");
   }
   let path = url.pathname.replace(/\/+$/, '');
   if (!path) path = '/v1';
@@ -19,19 +20,19 @@ export function normalizeEndpoint(value: string): string {
 }
 
 function statusError(status: number): Error {
-  if (status === 401 || status === 403) return new Error(`API 鉴权失败（${status}），请检查密钥及调用权限。`);
-  if (status === 404) return new Error('API 地址或模型不存在（404），请检查接口地址和模型 ID。');
-  if (status === 413) return new Error('问题或历史记录过长（413），请缩短内容或新建会话。');
-  if (status === 429) return new Error('API 请求受限（429），请稍后手动重试或检查额度。');
-  if (status >= 500) return new Error(`API 服务暂时不可用（${status}），请稍后手动重试。`);
-  return new Error(`API 请求失败（${status}），请检查接口配置、模型及上下文长度。`);
+  if (status === 401 || status === 403) return bilingualError(`API 鉴权失败（${status}），请检查密钥及调用权限。`, `API authentication failed (${status}). Check your API key and permissions.`);
+  if (status === 404) return bilingualError('API 地址或模型不存在（404），请检查接口地址和模型 ID。', "The API endpoint or model was not found (404). Check the address and model ID.");
+  if (status === 413) return bilingualError('问题或历史记录过长（413），请缩短内容或新建会话。', "The question or history is too long (413). Shorten it or start a new conversation.");
+  if (status === 429) return bilingualError('API 请求受限（429），请稍后手动重试或检查额度。', "The API request was rate-limited (429). Retry later or check your quota.");
+  if (status >= 500) return bilingualError(`API 服务暂时不可用（${status}），请稍后手动重试。`, `The API service is temporarily unavailable (${status}). Retry later.`);
+  return bilingualError(`API 请求失败（${status}），请检查接口配置、模型及上下文长度。`, `The API request failed (${status}). Check the endpoint settings, model, and context length.`);
 }
 
 function completion(value: any, onText: (text: string) => void): { truncated?: boolean } {
-  if (value?.error) throw new Error('API 返回错误，请检查模型、额度及上下文长度。');
+  if (value?.error) throw bilingualError('API 返回错误，请检查模型、额度及上下文长度。', "The API returned an error. Check the model, quota, and context length.");
   const choice = value?.choices?.[0];
-  if (!choice || typeof choice.message?.content !== 'string') throw new Error('API 返回格式不受支持，需要 Chat Completions 格式。');
-  if (choice.finish_reason === 'content_filter') throw new Error('API 未完成回答：内容被服务端过滤。');
+  if (!choice || typeof choice.message?.content !== 'string') throw bilingualError('API 返回格式不受支持，需要 Chat Completions 格式。', "The API response format is unsupported. Chat Completions format is required.");
+  if (choice.finish_reason === 'content_filter') throw bilingualError('API 未完成回答：内容被服务端过滤。', "The API did not complete the answer because the server filtered its content.");
   onText(choice.message.content);
   return choice.finish_reason === 'length' ? { truncated: true } : {};
 }
@@ -62,8 +63,8 @@ export async function chatCompletion(request: ChatRequest): Promise<{ truncated?
         signal: controller.signal, credentials: 'omit', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer',
       });
     } catch {
-      if (controller.signal.aborted) throw new Error(timedOut ? 'API 连接或响应超时，请手动重试。' : '已停止生成。');
-      throw new Error('无法连接 API，请检查网络、地址和证书；接口重定向不受支持。');
+      if (controller.signal.aborted) throw bilingualError(timedOut ? 'API 连接或响应超时，请手动重试。' : '已停止生成。', timedOut ? 'The API connection or response timed out. Retry manually.' : 'Generation stopped.');
+      throw bilingualError('无法连接 API，请检查网络、地址和证书；接口重定向不受支持。', "Could not connect to the API. Check the network, URL, and certificate; endpoint redirects are unsupported.");
     }
     if (!response.ok) throw statusError(response.status);
     resetTimer(IDLE_TIMEOUT);
@@ -72,13 +73,13 @@ export async function chatCompletion(request: ChatRequest): Promise<{ truncated?
       let json: any;
       try { json = await response.json(); }
       catch {
-        if (controller.signal.aborted) throw new Error(timedOut ? 'API 响应超时，请手动重试。' : '已停止生成。');
-        throw new Error('API 返回了无效的 JSON。');
+        if (controller.signal.aborted) throw bilingualError(timedOut ? 'API 响应超时，请手动重试。' : '已停止生成。', timedOut ? 'The API response timed out. Retry manually.' : 'Generation stopped.');
+        throw bilingualError('API 返回了无效的 JSON。', "The API returned invalid JSON.");
       }
-      if (controller.signal.aborted) throw new Error(timedOut ? 'API 响应超时，请手动重试。' : '已停止生成。');
+      if (controller.signal.aborted) throw bilingualError(timedOut ? 'API 响应超时，请手动重试。' : '已停止生成。', timedOut ? 'The API response timed out. Retry manually.' : 'Generation stopped.');
       return completion(json, request.onText);
     }
-    if (!response.body) throw new Error('API 没有返回可读取的响应。');
+    if (!response.body) throw bilingualError('API 没有返回可读取的响应。', "The API returned no readable response.");
     reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
@@ -93,12 +94,12 @@ export async function chatCompletion(request: ChatRequest): Promise<{ truncated?
       if (data.trim() === '[DONE]') { done = true; return; }
       let value: any;
       try { value = JSON.parse(data); }
-      catch { throw new Error('API 流式数据格式无效，请手动重试。'); }
-      if (value?.error) throw new Error('API 在生成过程中返回错误，请检查额度、模型及上下文长度。');
+      catch { throw bilingualError('API 流式数据格式无效，请手动重试。', "The API stream format is invalid. Retry manually."); }
+      if (value?.error) throw bilingualError('API 在生成过程中返回错误，请检查额度、模型及上下文长度。', "The API returned an error during generation. Check the quota, model, and context length.");
       const choice = value?.choices?.find((item: any) => item.index === 0) ?? value?.choices?.[0];
       if (!choice) return; // Usage-only event
       if (typeof choice.delta?.content === 'string') request.onText(choice.delta.content);
-      if (choice.finish_reason === 'content_filter') throw new Error('API 未完成回答：内容被服务端过滤。');
+      if (choice.finish_reason === 'content_filter') throw bilingualError('API 未完成回答：内容被服务端过滤。', "The API did not complete the answer because the server filtered its content.");
       if (choice.finish_reason != null) { finished = true; done = true; truncated ||= choice.finish_reason === 'length'; }
     };
     const line = (value: string) => {
@@ -133,11 +134,11 @@ export async function chatCompletion(request: ChatRequest): Promise<{ truncated?
         consume(false);
       }
     } catch (error) {
-      if (controller.signal.aborted) throw new Error(timedOut ? 'API 响应超时，请手动重试。' : '已停止生成。');
+      if (controller.signal.aborted) throw bilingualError(timedOut ? 'API 响应超时，请手动重试。' : '已停止生成。', timedOut ? 'The API response timed out. Retry manually.' : 'Generation stopped.');
       if (error instanceof Error && error.message.startsWith('API ')) throw error;
-      throw new Error('API 连接中断，请手动重试。');
+      throw bilingualError('API 连接中断，请手动重试。', "The API connection was interrupted. Retry manually.");
     }
-    if (!done && !finished) throw new Error('API 响应意外中断，已保留收到的文字，请手动重试。');
+    if (!done && !finished) throw bilingualError('API 响应意外中断，已保留收到的文字，请手动重试。', "The API response ended unexpectedly. Received text has been preserved; retry manually.");
     return truncated ? { truncated: true } : {};
   } finally {
     if (timer) clearTimeout(timer);

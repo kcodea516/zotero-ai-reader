@@ -4,6 +4,7 @@ import { mountSidebar } from './sidebar';
 import { mountSettings as mountSettingsUI } from './settings';
 import type { Host, PaperScope, Quote, PaperSource } from './types';
 import { createZoteroPaperContextProvider } from './zotero-reading';
+import { getLanguage, tr } from './i18n.ts';
 
 const ADDON_ID = 'ai-reader@local.codex';
 const TRANSLATE_ID = 'zoteropdftranslate@euclpts.com';
@@ -28,6 +29,7 @@ let notifierID: string | number | undefined;
 let alive = false;
 let publishedAPI: any;
 let resourceVersion = '';
+let unsubscribeLanguage: (() => void) | undefined;
 const sections = new Map<HTMLElement, SectionInstance>();
 const windows = new Map<Document, () => void>();
 const settings = new Set<() => void>();
@@ -46,7 +48,7 @@ export function scopeForItem(item: any): PaperScope | null {
   const parent = item.parentItem || (item.parentID ? Zotero.Items.get(item.parentID) : null);
   const target = parent || item;
   if (!target.key || !Number.isInteger(target.libraryID)) return null;
-  return { libraryID: target.libraryID, itemKey: target.key, title: target.getField('title') || '未命名文献' };
+  return { libraryID: target.libraryID, itemKey: target.key, title: target.getField('title') || tr(getLanguage(service?.getConfig()), '未命名文献', 'Untitled paper') };
 }
 
 function sameScope(left: PaperScope | null, right: PaperScope): boolean {
@@ -77,6 +79,40 @@ function injectWindow(win: any): void {
   };
   windows.set(doc, cleanup);
   win.addEventListener('unload', cleanup, { once: true });
+}
+
+function nativeLabelID(part: 'section' | 'sidenav' | 'settings'): string {
+  return `ai-reader-${part}-${getLanguage(service?.getConfig()) === 'en-US' ? 'en' : 'zh'}`;
+}
+
+function updateNativeLabels(instance?: SectionInstance): void {
+  const language = getLanguage(service?.getConfig());
+  const label = tr(language, 'AI 阅读助手', 'AI Reader');
+  if (instance?.section?.isConnected) {
+    instance.section.setL10nID(nativeLabelID('section'));
+    const collapsible = instance.section.querySelector('collapsible-section');
+    if (collapsible) collapsible.label = label;
+    const settingsButton = collapsible?.querySelector('.settings');
+    settingsButton?.setAttribute('data-l10n-id', nativeLabelID('settings'));
+    const id = instance.section.paneID || paneID;
+    for (const button of instance.body.ownerDocument.querySelectorAll<HTMLElement>('.btn[data-pane]')) {
+      if (button.dataset.pane === id) button.setAttribute('data-l10n-id', nativeLabelID('sidenav'));
+    }
+  }
+  // Update only this plugin's preferences entry. Reloading the native window
+  // would discard unsaved endpoint, model and key fields.
+  const registered = Zotero.PreferencePanes.pluginPanes?.find((pane: any) => pane.id === preferencesID);
+  if (registered) registered.rawLabel = label;
+  for (const doc of windows.keys()) {
+    const controller = (doc.defaultView as any)?.Zotero_Preferences;
+    const pane = controller?.panes?.get(preferencesID);
+    if (!pane) continue;
+    pane.rawLabel = label;
+    const nav = Array.from(doc.querySelectorAll('richlistitem')).find(node => node.getAttribute('value') === preferencesID);
+    nav?.querySelector('label')?.setAttribute('value', label);
+    const heading = pane.container.querySelector(':scope > h1');
+    if (heading) heading.textContent = label;
+  }
 }
 
 function translationPaneID(): string | undefined {
@@ -143,6 +179,7 @@ function mountSettings(container: HTMLElement): () => void {
   if (!host || !alive) return () => {};
   injectWindow(container.ownerDocument.defaultView);
   const unmount = mountSettingsUI(container, host);
+  updateNativeLabels();
   let disposed = false;
   const cleanup = () => {
     if (disposed) return;
@@ -197,7 +234,7 @@ function onSelectionPopup({ reader, doc, params, append }: any): void {
   if (!text || !alive) return;
   const button = doc.createElement('button');
   button.type = 'button';
-  button.textContent = Zotero.locale?.startsWith('zh') ? '询问 AI' : 'Ask AI';
+  button.textContent = tr(getLanguage(service?.getConfig()), '询问 AI', 'Ask AI');
   button.className = 'ai-reader-ask-selection';
   button.style.cssText = 'margin:4px 6px;padding:4px 10px;border-radius:5px;cursor:pointer;';
   button.addEventListener('click', () => {
@@ -255,7 +292,7 @@ export async function startup({ id = ADDON_ID, version = '', rootURI }: { id?: s
   preferencesID = await Zotero.PreferencePanes.register({
     pluginID: id,
     id: 'ai-reader-preferences',
-    label: 'AI 阅读助手',
+    label: tr(getLanguage(service.getConfig()), 'AI 阅读助手', 'AI Reader'),
     image: rootURI + 'icons/chat.svg',
     src: rootURI + 'prefs.xhtml',
     scripts: [rootURI + 'prefs.js'],
@@ -264,8 +301,8 @@ export async function startup({ id = ADDON_ID, version = '', rootURI }: { id?: s
   const registered = Zotero.ItemPaneManager.registerSection({
     paneID: 'chat',
     pluginID: id,
-    header: { l10nID: 'ai-reader-section', icon: rootURI + 'icons/chat16.svg' },
-    sidenav: { l10nID: 'ai-reader-sidenav', icon: rootURI + 'icons/chat20.svg', orderable: false },
+    header: { l10nID: nativeLabelID('section'), icon: rootURI + 'icons/chat16.svg' },
+    sidenav: { l10nID: nativeLabelID('sidenav'), icon: rootURI + 'icons/chat20.svg', orderable: false },
     onInit({ body, doc, item, refresh }: any) {
       injectWindow(doc.defaultView);
       const section = body.closest('item-pane-custom-section');
@@ -273,6 +310,7 @@ export async function startup({ id = ADDON_ID, version = '', rootURI }: { id?: s
         body, section, details: section.closest('item-details'), scope: scopeForItem(item), refresh, disposePlacement() {},
       };
       sections.set(body, instance);
+      updateNativeLabels(instance);
       instance.disposePlacement = observePlacement(instance);
     },
     onItemChange({ body, item, tabType, setEnabled }: any) {
@@ -289,6 +327,7 @@ export async function startup({ id = ADDON_ID, version = '', rootURI }: { id?: s
       const scope = scopeForItem(item);
       if (!instance || !scope || !host) return;
       instance.scope = scope;
+      updateNativeLabels(instance);
       if (instance.panel) instance.panel.updateScope(scope);
       else instance.panel = mountSidebar(body, scope, host);
     },
@@ -296,12 +335,20 @@ export async function startup({ id = ADDON_ID, version = '', rootURI }: { id?: s
     sectionButtons: [{
       type: 'settings',
       icon: rootURI + 'icons/settings.svg',
-      l10nID: 'ai-reader-settings',
+      l10nID: nativeLabelID('settings'),
       onClick() { host?.openSettings(); },
     }],
   });
   if (!registered) { await shutdown(); throw new Error('无法注册 AI 对话侧栏。'); }
   paneID = registered;
+  let language = getLanguage(service.getConfig());
+  unsubscribeLanguage = service.subscribe(() => {
+    const next = getLanguage(service?.getConfig());
+    if (next === language) return;
+    language = next;
+    for (const instance of sections.values()) updateNativeLabels(instance);
+    updateNativeLabels();
+  });
 
   notifierID = Zotero.Notifier.registerObserver({
     notify() {
@@ -324,6 +371,8 @@ export async function shutdown(): Promise<void> {
   const stoppingService = service;
   const stoppingSecrets = secretStore;
   try {
+    cleanupSafely(() => unsubscribeLanguage?.(), 'language-listener-cleanup-failed');
+    unsubscribeLanguage = undefined;
     cleanupSafely(() => Zotero.Reader.unregisterEventListener('renderTextSelectionPopup', onSelectionPopup), 'reader-listener-cleanup-failed');
     const oldNotifierID = notifierID;
     notifierID = undefined;

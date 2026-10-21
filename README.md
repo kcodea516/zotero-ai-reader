@@ -19,19 +19,25 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/kcodea516/zotero-ai-reader?color=555" alt="MIT license" /></a>
 </p>
 
-A Chinese-language reading assistant in the Zotero PDF sidebar, with configurable OpenAI-compatible Chat Completions endpoints. Continue conversations and switch models while keeping the paper open.
+A bilingual reading assistant in the Zotero PDF sidebar, with configurable OpenAI-compatible Chat Completions endpoints. Continue conversations and switch models while keeping the paper open.
 
 ## Installation
 
-1. Download `zotero-ai-reader-1.2.0.xpi` from the [release page](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.2.0).
+1. Download `zotero-ai-reader-1.3.0.xpi` from the [release page](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.0).
 2. In Zotero, open **Tools → Plugins**, then choose **Install Plugin From File** from the gear menu.
-3. Select the XPI and open a PDF. Expand **AI 阅读助手** in the right sidebar. When Translate for Zotero is installed, the assistant appears below the translation section.
+3. Select the XPI and open a PDF. Expand **AI Reader** in the right sidebar. When Translate for Zotero is installed, the assistant appears below the translation section.
 
 Updates are installed manually using the same steps. Updating preserves local conversations and endpoint settings. The plugin has been checked on macOS with Zotero 10.0.6; other platforms and versions have not been verified. See [validation records](VALIDATION.md) for the scope of the checks.
 
+## Interface language
+
+Open **Settings** in the sidebar and choose **Chinese** or **English** under **Interface language**. The settings preview changes immediately; click **Save settings** to apply the language to the sidebar, history page, source labels, and status messages. The choice is saved across restarts. Existing installations keep Chinese until you change it.
+
+Changing the interface language preserves unsent questions, quotations, and unsaved endpoint fields. It does not translate saved conversations, paper titles, or your custom system prompt. To change the language of model answers, edit the system prompt or ask the model in your preferred language.
+
 ## Configure an endpoint and model
 
-Open **设置** in the assistant, or its pane in Zotero Settings. Add an endpoint with a name, Base URL, and API key, then add a model with a display name and the provider's actual model ID. Leaving the key field blank preserves an existing key; removing it requires the separate clear action.
+Open **Settings** in the assistant, or its pane in Zotero Settings. Add an endpoint with a name, Base URL, and API key, then add a model with a display name and the provider's actual model ID. Leaving the key field blank preserves an existing key; removing it requires the separate clear action.
 
 Accepted URL examples:
 
@@ -50,14 +56,14 @@ The endpoint must support the Chat Completions `model`, `messages`, and `stream`
 
 Two permissions are saved per conversation. Both are enabled by default:
 
-- **读取原文** reads the current paper's local PDF before answering.
-- **按需查文库** allows the assistant to look up other papers when the current question needs a comparison or additional literature evidence.
+- **Read paper** reads the current paper's local PDF before answering.
+- **Search library as needed** allows the assistant to look up other papers when the current question needs a comparison or additional literature evidence.
 
 Library lookup covers the **same Zotero library**, including papers outside the current collection. It does not search other Zotero libraries or the web, and does not download missing papers.
 
 Enabling lookup does not attach related PDFs to every question. After preparing any enabled current-paper evidence, the selected model makes a bounded routing decision. The routing prompt asks it to keep explanations, summaries, translations, and follow-up questions about the current paper on that paper alone. A positive decision can trigger a library search and extraction from up to three local PDFs. If the search matches explicitly named papers, it returns those matches without filling unused slots with broad topic matches. A previous comparison does not automatically carry those PDFs into the next question. If the routing decision fails, the plugin skips the lookup, keeps any available current-paper evidence, and reports the failure.
 
-Routing uses an additional short request to the selected endpoint. It receives the current question, the last three questions, the current paper's title, and a bounded excerpt of the current paper when reading is enabled. It does not receive other papers' contents before deciding to search. Disable **按需查文库** to skip both routing and library lookup. Disable both permissions to send only the question, manual quotations, and completed conversation history.
+Routing uses an additional short request to the selected endpoint. It receives the current question, the last three questions, the current paper's title, and a bounded excerpt of the current paper when reading is enabled. It does not receive other papers' contents before deciding to search. Disable **Search library as needed** to skip both routing and library lookup. Disable both permissions to send only the question, manual quotations, and completed conversation history.
 
 Short papers can be supplied in full. Longer papers use relevant pages and nearby passages. The current paper has a material budget of about 90,000 characters, and the combined evidence budget is 130,000 characters. Partial coverage is disclosed. Missing, encrypted, scanned, or otherwise unreadable PDFs are not treated as read. The plugin does not perform OCR, and text extraction may omit figures, complex equations, or layout relationships.
 
@@ -66,11 +72,11 @@ Answers with retrieved evidence have a source list showing the actual papers and
 ## Conversations and history
 
 - Press Enter to send, Shift+Enter for a newline, or Cmd/Ctrl+Enter to send.
-- Select PDF text and choose **询问 AI** to add an editable quotation. Adding a quotation does not send a request.
+- Select PDF text and choose **Ask AI** to add an editable quotation. Adding a quotation does not send a request.
 - Continue in the same input after an answer. Long responses scroll within the message area.
 - Switch models to continue the conversation with a different model. Each answer keeps its original endpoint and model label.
 - Stop an active request or retry an incomplete round. Failed and stopped rounds are excluded from later conversation context.
-- Open **历史** for a separate history page. Cards show the conversation title, paper, update time, latest message, and round count. Search or filter by current paper/all history, select a card to enter, or return to the active conversation. Drafts are preserved when switching.
+- Open **History** for a separate history page. Cards show the conversation title, paper, update time, latest message, and round count. Search or filter by current paper/all history, select a card to enter, or return to the active conversation. Drafts are preserved when switching.
 - Rename or delete an individual conversation from its card. Deletion requires confirmation.
 - Copy a message using the icon below it, or copy the current conversation as Markdown from history.
 
@@ -78,7 +84,7 @@ Answers support Markdown, code blocks, and local LaTeX rendering. Completed conv
 
 ## Message colors
 
-User messages have a light blue background by default (`#eaf3ff`). In **设置 → 对话外观**, choose a color or enter a six-digit hex value. The preview updates immediately. Click **保存设置** to apply the color to existing and new user messages; the plugin selects black or white text for contrast. **恢复默认颜色** resets the color preview without changing endpoint or model settings; click **保存设置** to apply the reset. Assistant messages retain their existing appearance.
+User messages have a light blue background by default (`#eaf3ff`). In **Settings → Chat appearance**, choose a color or enter a six-digit hex value. The preview updates immediately. Click **Save settings** to apply the color to existing and new user messages; the plugin selects black or white text for contrast. **Reset color** resets the color preview without changing endpoint or model settings; click **Save settings** to apply the reset. Assistant messages retain their existing appearance.
 
 ## Data and privacy
 
@@ -107,7 +113,7 @@ npm test
 npm run build
 ```
 
-The package is written to `build/zotero-ai-reader-1.2.0.xpi`. Source code is in `src/`, Zotero resources in `addon/`, and tests in `tests/`. The package includes local rendering libraries and fonts; installed users do not need Node.js. CI checks types, runs unit tests, builds the XPI, and uploads it as an artifact. Native Zotero integration fixtures are documented in [VALIDATION.md](VALIDATION.md).
+The package is written to `build/zotero-ai-reader-1.3.0.xpi`. Source code is in `src/`, Zotero resources in `addon/`, and tests in `tests/`. The package includes local rendering libraries and fonts; installed users do not need Node.js. CI checks types, runs unit tests, builds the XPI, and uploads it as an artifact. Native Zotero integration fixtures are documented in [VALIDATION.md](VALIDATION.md).
 
 ## Feedback and contribution
 

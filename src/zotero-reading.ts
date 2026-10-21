@@ -1,3 +1,4 @@
+import { tr, type UILanguage } from './i18n.ts';
 import type { PaperContextProvider, PaperScope } from './types';
 import { buildPaperContext, rankPapers, type PaperDocument, type PaperRecord } from './reading.ts';
 
@@ -22,7 +23,7 @@ export function createZoteroPaperContextProvider(environment: { zotero?: any; fi
     return !!item && item.libraryID === scope.libraryID && item.key === scope.itemKey && !item.deleted;
   }
 
-  async function metadata(item: any): Promise<PaperRecord> {
+  async function metadata(item: any, language: UILanguage = 'zh-CN'): Promise<PaperRecord> {
     await zotero.Items.loadDataTypes([item], ['itemData', 'collections']);
     const collectionKeys: string[] = [];
     for (const collectionID of item.getCollections?.() || []) {
@@ -32,7 +33,7 @@ export function createZoteroPaperContextProvider(environment: { zotero?: any; fi
     return {
       libraryID: item.libraryID,
       itemKey: item.key,
-      title: String(item.getField('title') || '未命名文献'),
+      title: String(item.getField('title') || tr(language, '未命名文献', 'Untitled paper')),
       shortTitle: String(item.getField('shortTitle') || ''),
       abstract: String(item.getField('abstractNote') || ''),
       collectionKeys,
@@ -127,7 +128,7 @@ export function createZoteroPaperContextProvider(environment: { zotero?: any; fi
   }
 
   return async request => {
-    const { scope, question, previousQuestions, options, signal } = request;
+    const { scope, question, previousQuestions, options, signal, language = 'zh-CN' } = request;
     checkCancellation(signal);
     if (!options.currentPaper && !options.relatedPapers) return { text: '', sources: [] };
     const warnings: string[] = [];
@@ -136,7 +137,7 @@ export function createZoteroPaperContextProvider(environment: { zotero?: any; fi
     let currentRecord: PaperRecord = { ...scope };
     let current: PaperDocument | undefined;
     if (isInScope(currentItem, scope)) {
-      currentRecord = await metadata(currentItem);
+      currentRecord = await metadata(currentItem, language);
       checkCancellation(signal);
       if (options.currentPaper) {
         try { current = await document(currentItem, currentRecord, signal); }
@@ -144,7 +145,7 @@ export function createZoteroPaperContextProvider(environment: { zotero?: any; fi
       }
     }
     if (options.currentPaper && !current) {
-      warnings.push('未能读取当前文献的完整本地 PDF 原文；请确认附件已下载、PDF 可提取文字。回答中不得假称已经读过该文献。');
+      warnings.push(tr(language, '未能读取当前文献的完整本地 PDF 原文；请确认附件已下载、PDF 可提取文字。回答中不得假称已经读过该文献。', 'The complete local PDF text could not be read. Check that the attachment is downloaded and has extractable text. Do not claim to have read it.'));
     }
     const related: PaperDocument[] = [];
     if (options.relatedPapers) {
@@ -157,7 +158,7 @@ export function createZoteroPaperContextProvider(environment: { zotero?: any; fi
       checkCancellation(signal);
       for (const item of eligible) {
         checkCancellation(signal);
-        const paper = await metadata(item);
+        const paper = await metadata(item, language);
         candidates.push(paper);
         items.set(paper.itemKey, item);
       }
@@ -170,11 +171,11 @@ export function createZoteroPaperContextProvider(environment: { zotero?: any; fi
           if (doc) related.push(doc);
         } catch { checkCancellation(signal); }
       }
-      if (chosen.length && !related.length) warnings.push('相关文献未找到可读取的完整本地 PDF，未把题录冒充原文。');
+      if (chosen.length && !related.length) warnings.push(tr(language, '相关文献未找到可读取的完整本地 PDF，未把题录冒充原文。', 'No readable complete local PDF was found for the related papers; metadata was not used as original text.'));
     }
     checkCancellation(signal);
-    const context = buildPaperContext(current, related, question);
-    const contextWarning = options.currentPaper ? context.warning : context.warning?.replace('未读取到当前文献正文。', '').trim();
+    const context = buildPaperContext(current, related, question, language);
+    const contextWarning = options.currentPaper ? context.warning : context.warning?.replace(tr(language, '未读取到当前文献正文。', 'The current paper text was not retrieved.'), '').trim();
     return { ...context, warning: [contextWarning, ...warnings].filter(Boolean).join('\n') || undefined };
   };
 }
