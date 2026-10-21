@@ -54,6 +54,10 @@
 .zar-root .zar-toolbar-actions button { flex: 1; }
 .zar-root .zar-paper { padding-block: 8px; line-height: 1.45; border-bottom: var(--material-border, 1px solid var(--zar-border)); overflow-wrap: anywhere; }
 .zar-root .zar-paper strong { display: block; font-size: .95em; font-weight: 600; }
+.zar-root .zar-reading-options { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 14px; margin-top: 6px; font-size: .92em; }
+.zar-root .zar-reading-options label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.zar-root .zar-reading-options input { margin: 0; }
+.zar-root .zar-reading-hint { margin-top: 4px; font-size: .82em; }
 .zar-root .zar-history { padding-block: 8px; border-bottom: 1px solid var(--zar-border); }
 .zar-root .zar-history .zar-row { margin-bottom: 6px; }
 .zar-root .zar-history input { flex: 1; min-width: 0; width: 100%; }
@@ -80,6 +84,13 @@
 .zar-root .zar-message-copy:disabled { opacity: .4; cursor: default; }
 .zar-root .zar-copy-feedback { font-size: .85em; color: var(--zar-muted); }
 .zar-root .zar-message-model { width: 100%; overflow-wrap: anywhere; }
+.zar-root .zar-message-context { font-size: .82em; margin-bottom: 7px; white-space: pre-wrap; }
+.zar-root .zar-message-sources { border-top: 1px solid var(--zar-border); margin-top: 9px; padding-top: 7px; font-size: .84em; }
+.zar-root .zar-message-sources summary { cursor: pointer; color: var(--zar-muted); }
+.zar-root .zar-source-link { display: block; appearance: none; font: inherit; text-align: start; color: var(--accent-blue, LinkText); padding: 5px 0 1px; border: 0; background: transparent; cursor: pointer; overflow-wrap: anywhere; width: 100%; }
+.zar-root .zar-source-link:hover { text-decoration: underline; }
+.zar-root .zar-source-link:focus-visible { outline: 2px solid var(--color-accent, Highlight); }
+.zar-root .zar-source-pages { color: var(--zar-muted); margin-bottom: 4px; }
 .zar-root .zar-message-error { font-size: .9em; margin-top: 8px; line-height: 1.5; white-space: pre-wrap; }
 .zar-root .zar-message-quote { border-inline-start: 2px solid var(--zar-border); padding-inline-start: 8px; margin: 0 0 8px; color: var(--zar-muted); white-space: pre-wrap; font-size: .92em; max-height: 130px; overflow: auto; }
 .zar-root .zar-markdown { line-height: 1.6; user-select: text; }

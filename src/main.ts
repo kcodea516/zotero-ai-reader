@@ -2,7 +2,8 @@ import { ChatService } from './core';
 import { ZoteroRepository, ZoteroSecretStore } from './platform';
 import { mountSidebar } from './sidebar';
 import { mountSettings as mountSettingsUI } from './settings';
-import type { Host, PaperScope, Quote } from './types';
+import type { Host, PaperScope, Quote, PaperSource } from './types';
+import { createZoteroPaperContextProvider } from './zotero-reading';
 
 const ADDON_ID = 'ai-reader@local.codex';
 const TRANSLATE_ID = 'zoteropdftranslate@euclpts.com';
@@ -215,7 +216,7 @@ export async function startup({ id = ADDON_ID, version = '', rootURI }: { id?: s
   const ownAddon = await AddonManager.getAddonByID(id);
   if (ownAddon) ownAddon.applyBackgroundUpdates = AddonManager.AUTOUPDATE_DISABLE;
   secretStore = new ZoteroSecretStore();
-  service = new ChatService(new ZoteroRepository(), secretStore);
+  service = new ChatService(new ZoteroRepository(), secretStore, undefined, createZoteroPaperContextProvider());
   await service.init();
   host = {
     service,
@@ -223,6 +224,18 @@ export async function startup({ id = ADDON_ID, version = '', rootURI }: { id?: s
     rootURI,
     openSettings() { Zotero.Utilities.Internal.openPreferences(preferencesID); },
     scopeForItem,
+    openSource(source: PaperSource, page?: number) {
+      void (async () => {
+        if (!Number.isInteger(source.libraryID) || !/^[A-Z0-9]{8}$/.test(source.attachmentKey)) return;
+        const attachment = await Zotero.Items.getByLibraryAndKeyAsync(source.libraryID, source.attachmentKey);
+        if (!attachment?.isAttachment() || attachment.deleted || attachment.attachmentContentType !== 'application/pdf') return;
+        const parent = attachment.parentID ? await Zotero.Items.getAsync(attachment.parentID) : attachment;
+        if (parent?.key !== source.itemKey || parent.deleted) return;
+        const destination = Number.isInteger(page) && source.pages.includes(page!) ? page! : source.pages[0];
+        if (!(destination >= 1 && destination <= source.totalPages)) return;
+        await Zotero.Reader.open(attachment.id, { pageIndex: destination - 1 });
+      })().catch(() => report('source-open-failed'));
+    },
     copy(text: string) {
       Components.classes['@mozilla.org/widget/clipboardhelper;1']
         .getService(Components.interfaces.nsIClipboardHelper).copyString(text);

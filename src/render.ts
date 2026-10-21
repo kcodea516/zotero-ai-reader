@@ -1,6 +1,7 @@
 import MarkdownIt from 'markdown-it';
 import createDOMPurify from 'dompurify';
 import katex from 'katex';
+import type { PaperSource } from './types.ts';
 
 const math = (source: string, displayMode: boolean): string => {
   try {
@@ -69,14 +70,18 @@ md.renderer.rules.reader_math_block = (tokens, index) => `${math(tokens[index].c
 const purifiers = new WeakMap<object, ReturnType<typeof createDOMPurify>>();
 
 /** Markdown and local KaTeX only. Every generated node is sanitized before insertion. */
-export function renderMarkdown(target: HTMLElement, content: string, openURL: (url: string) => void): void {
+export function renderMarkdown(target: HTMLElement, content: string, openURL: (url: string) => void, sources: PaperSource[] = [], openSource?: (source: PaperSource, page?: number) => void): void {
   const win = target.ownerDocument.defaultView!;
   let purifier = purifiers.get(win);
   if (!purifier) {
     purifier = createDOMPurify(win as any);
     purifiers.set(win, purifier);
   }
-  const fragment = purifier.sanitize(md.render(content), {
+  const cited = content.replace(/\[(S\d+)(?:,\s*PDF)?\s+p\.?\s*(\d+)\]/gi, (original, id: string, page: string) => {
+    const source = sources.find(entry => entry.id === id.toUpperCase() && entry.pages.includes(Number(page)));
+    return source && openSource ? `[${source.id} · PDF ${page}](https://ai-reader.invalid/source/${source.id}/${page})` : original;
+  });
+  const fragment = purifier.sanitize(md.render(cited), {
     RETURN_DOM_FRAGMENT: true,
     USE_PROFILES: { html: true, mathMl: true, svg: true },
     FORBID_TAGS: ['img', 'iframe', 'video', 'audio', 'object', 'embed', 'style', 'script', 'form', 'input', 'button'],
@@ -85,6 +90,17 @@ export function renderMarkdown(target: HTMLElement, content: string, openURL: (u
   }) as unknown as DocumentFragment;
   for (const anchor of Array.from(fragment.querySelectorAll('a'))) {
     const url = anchor.getAttribute('href') || '';
+    const local = /^https:\/\/ai-reader\.invalid\/source\/(S\d+)\/(\d+)$/.exec(url);
+    if (local) {
+      const page = Number(local[2]);
+      const source = sources.find(entry => entry.id === local[1] && entry.pages.includes(page));
+      if (source && openSource) {
+        anchor.setAttribute('href', '#');
+        anchor.title = `${source.title} · PDF 第 ${page} 页`;
+        anchor.addEventListener('click', event => { event.preventDefault(); openSource(source, page); });
+      } else anchor.removeAttribute('href');
+      continue;
+    }
     if (!/^https?:\/\//i.test(url)) anchor.removeAttribute('href');
     else {
       anchor.setAttribute('rel', 'noopener noreferrer');

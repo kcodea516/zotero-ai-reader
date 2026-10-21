@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
   "name": "AI 阅读助手",
-  "version": "1.0.2",
-  "description": "在 Zotero 阅读侧栏使用自己配置的 API，与论文展开多轮对话。",
+  "version": "1.1.0",
+  "description": "自动读取论文原文、联查 Zotero 文献并带页码引用的多轮 AI 阅读助手。",
   "author": "kcodea516 and contributors",
   "icons": {
     "48": "icons/chat.svg",

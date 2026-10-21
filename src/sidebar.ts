@@ -33,7 +33,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   let quoteSignature = '';
   let renderedConversationId = '';
   const copyTimers = new Map<string, number>();
-  const rendered = new Map<string, { root: HTMLElement; content: HTMLElement; signature: string; contentText: string | undefined; quoteRef: Quote | undefined; headerSignature: string; header: HTMLElement; quote: HTMLElement; error: HTMLElement; copy: HTMLButtonElement }>();
+  const rendered = new Map<string, { root: HTMLElement; content: HTMLElement; signature: string; contentText: string | undefined; quoteRef: Quote | undefined; headerSignature: string; header: HTMLElement; quote: HTMLElement; error: HTMLElement; copy: HTMLButtonElement; context: HTMLElement; sources: HTMLDetailsElement }>();
   const root = el('div', 'zar-root zar-sidebar');
   root.setAttribute('aria-label', 'AI 阅读助手');
   const toolbar = el('div', 'zar-toolbar');
@@ -51,7 +51,16 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   const paper = el('div', 'zar-paper');
   const paperLabel = el('div', 'zar-muted'); const paperTitle = el('strong');
   const returnButton = button('返回当前文献', () => { conversationId = host.service.forScope(scope).id; render(); }, 'zar-text-button');
-  paper.append(paperLabel, paperTitle, returnButton);
+  const readingOptions = el('div', 'zar-reading-options');
+  const currentLabel = el('label'); const currentCheck = el('input'); currentCheck.type = 'checkbox';
+  currentLabel.append(currentCheck, doc.createTextNode('读取原文'));
+  currentLabel.title = '发送问题时自动读取当前论文的本地 PDF 原文。';
+  const relatedLabel = el('label'); const relatedCheck = el('input'); relatedCheck.type = 'checkbox';
+  relatedLabel.append(relatedCheck, doc.createTextNode('联查文库'));
+  relatedLabel.title = '按问题检索同一文库中的相关论文，读取可用的本地 PDF 片段。';
+  readingOptions.append(currentLabel, relatedLabel);
+  const readingHint = el('div', 'zar-muted zar-reading-hint', '原文与相关片段会随问题发送到所选接口。');
+  paper.append(paperLabel, paperTitle, returnButton, readingOptions, readingHint);
   const history = el('div', 'zar-history');
   const historyControls = el('div', 'zar-row');
   const historyScope = nativeSelect(doc, 'zar-history-scope', '历史记录范围');
@@ -74,7 +83,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   // Announcing every streamed token makes screen readers unusable; status is announced separately.
   messages.setAttribute('aria-live', 'off');
   const empty = el('div', 'zar-empty');
-  empty.append(el('p', '', '阅读时遇到问题，可以直接在这里提问。'), el('p', '', '选中文字后点击“询问 AI”，可将原文作为本次问题的引用。'));
+  empty.append(el('p', '', '直接询问当前论文的章节、方法或实验，无需粘贴原文。'), el('p', '', '要对照其他论文，可在问题中写出简称或标题。也可以选中文字后点击“询问 AI”。'));
   const compose = el('div', 'zar-compose');
   const quoteBox = el('div', 'zar-quote');
   const quoteHeader = el('div', 'zar-row');
@@ -208,12 +217,15 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       });
       actions.append(copy, feedback);
       const quote = el('blockquote', 'zar-message-quote');
+      const context = el('div', 'zar-message-context zar-muted');
       const content = el('div', 'zar-markdown');
       const error = el('div', 'zar-message-error');
-      messageRoot.append(header, quote, content, error, actions);
-      entry = { root: messageRoot, content, signature: '', contentText: undefined, quoteRef: undefined, headerSignature: '', header, quote, error, copy }; rendered.set(message.id, entry);
+      const sources = el('details', 'zar-message-sources');
+      sources.hidden = true;
+      messageRoot.append(header, quote, context, content, sources, error, actions);
+      entry = { root: messageRoot, content, signature: '', contentText: undefined, quoteRef: undefined, headerSignature: '', header, quote, error, copy, context, sources }; rendered.set(message.id, entry);
     }
-    const signature = JSON.stringify([message.status, message.error, message.modelName, message.endpointName]);
+    const signature = JSON.stringify([message.status, message.error, message.modelName, message.endpointName, message.contextNotice, message.sources]);
     if (entry.contentText !== message.content || entry.quoteRef !== message.quote || entry.signature !== signature) {
       entry.signature = signature; entry.contentText = message.content; entry.quoteRef = message.quote;
       const headerSignature = JSON.stringify([message.role, message.createdAt, message.modelName, message.endpointName]);
@@ -228,7 +240,23 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       entry.copy.disabled = !message.content;
       entry.quote.hidden = !message.quote;
       entry.quote.textContent = message.quote ? `${message.quote.pageLabel ? `第 ${message.quote.pageLabel} 页\n` : ''}${message.quote.text}` : '';
-      renderMarkdown(entry.content, message.content || (message.status === 'streaming' ? '正在生成…' : ''), host.openURL);
+      entry.context.textContent = message.contextNotice || '';
+      entry.context.hidden = !message.contextNotice;
+      renderMarkdown(entry.content, message.content || (message.status === 'streaming' && !message.contextNotice ? '正在生成…' : ''), host.openURL, message.sources, host.openSource);
+      entry.sources.hidden = !message.sources?.length;
+      entry.sources.replaceChildren();
+      if (message.sources?.length) {
+        entry.sources.append(el('summary', '', `本轮原文来源 · ${message.sources.length} 篇`));
+        for (const source of message.sources) {
+          const sourceButton = el('button', 'zar-source-link'); sourceButton.type = 'button';
+          sourceButton.textContent = `${source.id} · ${source.title}`;
+          sourceButton.title = `打开原文，PDF 第 ${source.pages[0]} 页`;
+          sourceButton.addEventListener('click', () => host.openSource?.(source, source.pages[0]));
+          const pages = source.pages.length > 8 ? `${source.pages.slice(0, 8).join('、')}…` : source.pages.join('、');
+          const description = el('div', 'zar-source-pages', `PDF 页码：${pages}${source.truncated ? ' · 按问题摘取的片段' : ''}`);
+          entry.sources.append(sourceButton, description);
+        }
+      }
       entry.error.textContent = [statusLabel(message.status), message.error].filter(Boolean).join(' · ');
       entry.error.hidden = !entry.error.textContent;
     }
@@ -267,6 +295,9 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       if (quoteInput.value !== (value.quote?.text || '')) quoteInput.value = value.quote?.text || '';
     }
     const busy = host.service.isBusy(value.id);
+    const reading = host.service.getReadingOptions(value.id);
+    currentCheck.checked = reading.currentPaper; relatedCheck.checked = reading.relatedPapers;
+    currentCheck.disabled = busy; relatedCheck.disabled = busy;
     sendButton.hidden = busy; stopButton.hidden = !busy;
     sendButton.disabled = !(value.draft.trim() || value.quote?.text.trim()) || !modelSelect.value;
     nativeTooltip(sendButton, modelSelect.value ? '发送问题及本次引用' : '请先在设置中添加 API 和模型');
@@ -284,6 +315,10 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   modelSelect.addEventListener('command', () => { const value = current(); if (value) run(() => host.service.setModel(value.id, modelSelect.value)); });
   historyScope.addEventListener('command', () => { allHistory = historyScope.value === 'all'; render(); });
   historyQuery.addEventListener('input', () => { query = historyQuery.value; render(); });
+  for (const control of [currentCheck, relatedCheck]) control.addEventListener('change', () => {
+    const value = current();
+    if (value) run(() => host.service.setReadingOptions(value.id, { currentPaper: currentCheck.checked, relatedPapers: relatedCheck.checked }));
+  });
   draft.addEventListener('input', () => {
     const value = current(); if (value) { host.service.setDraft(value.id, draft.value); sendButton.disabled = !(draft.value.trim() || value.quote?.text.trim()) || !modelSelect.value; }
   });
