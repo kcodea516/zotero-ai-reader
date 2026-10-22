@@ -1,0 +1,29 @@
+name: Feature request or maintenance proposal
+description: Describe a reading workflow to improve, or an area you would like to maintain.
+title: "[Feature] "
+body:
+  - type: markdown
+    attributes:
+      value: "English and Chinese suggestions are welcome. Start with the task you want to complete."
+  - type: textarea
+    id: problem
+    attributes:
+      label: What reading task is difficult today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: "A concrete before/after example is helpful."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or workarounds you have tried
+  - type: textarea
+    id: contribution
+    attributes:
+      label: Would you like to help test, implement, document, or maintain this area?
+      description: "Optional. You can suggest a feature without committing to work on it."
