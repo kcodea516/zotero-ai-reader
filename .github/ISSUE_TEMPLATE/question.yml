@@ -1,0 +1,21 @@
+name: Setup question or compatibility report
+description: Ask for help, or report a configuration that works.
+title: "[Question] "
+body:
+  - type: input
+    id: environment
+    attributes:
+      label: Plugin version, Zotero version, and operating system
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question or compatibility result
+      description: "Include the provider/model and streaming setting if relevant. Never include an API key. English and Chinese are welcome."
+    validations:
+      required: true
+  - type: textarea
+    id: attempted
+    attributes:
+      label: What have you tried, and what happened?

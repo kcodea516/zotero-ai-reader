@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Installation and reading guide
+    url: https://github.com/kcodea516/zotero-ai-reader#installation
+    about: Start here for installation, model configuration, and release channels.
+  - name: Contributing guide
+    url: https://github.com/kcodea516/zotero-ai-reader/blob/main/CONTRIBUTING.md
+    about: Help with testing, documentation, code, or ongoing maintenance.

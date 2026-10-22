@@ -1,155 +1,161 @@
-<h1 align="center">Zotero AI Reader:<br />Chat with your papers, inside Zotero</h1>
+<h1 align="center">Zotero AI Reader:<br />Understand papers without leaving Zotero</h1>
 
 <p align="center">
-  <strong>A native, simple sidebar for understanding papers.</strong><br />
-  Ask about the paper you're reading, compare related work when needed, and open cited PDF pages.
+  <strong>A native, simple sidebar for reading and discussing papers.</strong><br />
+  Ask about the current PDF, follow up in context, and return to the cited pages.
 </p>
 
 <p align="center">
   <a href="#installation">Install</a> ·
-  <a href="#configure-an-endpoint-and-model">User guide</a> ·
-  <a href="CHANGELOG.md">Changelog</a> ·
-  <a href="https://github.com/kcodea516/zotero-ai-reader/issues">Feedback</a>
+  <a href="#what-it-does">Features</a> ·
+  <a href="#release-channels">Preview</a> ·
+  <a href="https://github.com/kcodea516/zotero-ai-reader/issues/new/choose">Report an issue</a> ·
+  <a href="CONTRIBUTING.md">Contribute</a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/kcodea516/zotero-ai-reader/releases/latest"><img src="https://img.shields.io/github/v/release/kcodea516/zotero-ai-reader?label=release&amp;color=c9313e" alt="Latest release" /></a>
+  <a href="https://github.com/kcodea516/zotero-ai-reader/releases/latest"><img src="https://img.shields.io/github/v/release/kcodea516/zotero-ai-reader?label=release&amp;color=c9313e" alt="Latest stable release" /></a>
   <a href="https://github.com/kcodea516/zotero-ai-reader/releases"><img src="https://img.shields.io/github/downloads/kcodea516/zotero-ai-reader/total?color=c9313e" alt="GitHub release downloads" /></a>
   <a href="https://github.com/kcodea516/zotero-ai-reader/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/kcodea516/zotero-ai-reader/ci.yml?branch=main&amp;label=CI" alt="CI status" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/kcodea516/zotero-ai-reader?color=555" alt="MIT license" /></a>
 </p>
 
-Zotero AI Reader uses Zotero’s native controls to keep paper discussions in the PDF sidebar. Ask about the current paper, follow up in the same conversation, and open the cited pages. The interface supports Chinese and English, with your own OpenAI-compatible Chat Completions endpoint.
+Zotero AI Reader keeps the PDF and its discussion together. It uses Zotero's native controls, reads local paper text when permitted, and works with your own OpenAI-compatible Chat Completions endpoint. The interface supports English and Chinese.
+
+**Feedback and contributors are welcome.** [Report a bug](https://github.com/kcodea516/zotero-ai-reader/issues/new?template=bug_report.yml), [suggest an improvement](https://github.com/kcodea516/zotero-ai-reader/issues/new?template=feature_request.yml), or help with testing, documentation, and code through the [contribution guide](CONTRIBUTING.md). You can write an issue in English or Chinese.
 
 ## In use
 
 <p align="center">
-  <img src="docs/images/reading-sidebar.png" width="420" alt="Native Zotero reading sidebar with a blue user message, an explanation of a paper, a PDF-page citation, and a source card above the follow-up input" />
+  <img src="docs/images/reading-sidebar.png" width="420" alt="Native Zotero sidebar showing a paper discussion, page citations, source cards, and the follow-up input" />
 </p>
 
-The sidebar keeps the follow-up input available below the conversation. Source cards identify the paper and PDF pages supplied for an answer. Other papers are searched only when needed and permitted.
+The input stays below the conversation. Each answer can show the papers and PDF pages supplied for that turn; a page citation opens the local PDF. The screenshots use the actual macOS interface with a sample conversation and example endpoint, rather than live provider responses.
 
-Screenshots show the actual plugin UI on macOS with a sample conversation and example endpoint. The sample answer and source metadata are illustrative; no live provider call was made for these images.
+## What it does
+
+- **Read the current paper.** Ask for a section explanation, a definition, or an account of the method and its assumptions. Available original text is read automatically, so you do not have to paste each passage.
+- **Check the source.** Inspect which papers and pages were supplied, then click a citation to return to the PDF. Partial coverage is disclosed.
+- **Compare papers when needed.** Permit on-demand lookup across the same Zotero library, including other collections. Ordinary follow-up questions stay on the current paper unless the lookup decision calls for other sources.
+- **Keep a conversation.** Follow up, switch models, stop generation, or retry an incomplete turn. History has its own page with search, titles, and preserved drafts.
+- **Choose your setup.** Configure multiple endpoints and models, switch the interface language, and customize the user-message color. Answers support Markdown, code, and local math rendering.
+
+If Translate for Zotero is installed, AI Reader appears below its translation section. Translate for Zotero is optional.
 
 ## Installation
 
-1. Download `zotero-ai-reader-1.3.2.xpi` from the [release page](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.2).
+1. Download `zotero-ai-reader-1.3.2.xpi` from the [stable release](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.2).
 2. In Zotero, open **Tools → Plugins**, then choose **Install Plugin From File** from the gear menu.
-3. Select the XPI and open a PDF. Expand **AI Reader** in the right sidebar. When Translate for Zotero is installed, the assistant appears below the translation section.
+3. Select the XPI, open a PDF, and expand **AI Reader** in the right sidebar.
+4. Open **Settings**, add an endpoint and model, save, and ask your first question.
 
-Updates are installed manually using the same steps. Updating preserves local conversations and endpoint settings. The plugin has been checked on macOS with Zotero 10.0.6; other platforms and versions have not been verified. See [validation records](VALIDATION.md) for the scope of the checks.
+The release targets Zotero **10.0.6–10.0.x** and has been checked on **macOS with Zotero 10.0.6**. Windows and Linux reports are welcome; they have not been verified. [Validation records](VALIDATION.md) describe the checks and their limits.
 
-## Annotation agent preview
+Updates are installed manually using the same steps. Updating preserves local conversations and endpoint settings. Installing a release does not require Node.js or Python.
 
-Version `1.4.0-beta.2` adds an opt-in **Annotation agent** mode for the current PDF. This branch is a preview; the stable release remains 1.3.2. The preview has passed automated tests and native checks on macOS with Zotero 10.0.6; see [validation records](VALIDATION.md) for their scope.
+## Connect a model
 
-1. Open a PDF and enable **Annotation agent** in the reading sidebar.
-2. Enter an instruction such as “Highlight the main design choices and explain why each matters.” The configured model receives text from the current PDF and proposes up to eight highlights or underlines with comments.
-3. Review the quoted passages and comments. **Show passage** opens the proposed position. Unmatched or ambiguous passages cannot be saved.
-4. Select the annotations to keep and click **Save selected annotations**. Planning alone does not write annotations.
-5. **Undo this batch** moves the saved annotations to Zotero Trash. If an annotation has been edited since saving, undo stops and preserves the batch.
+In **Settings**, add the endpoint name, Base URL, and API key. Then add a model display name and its actual model ID. Leaving the key field blank retains a saved key; clearing it uses a separate action.
 
-Positions are matched locally against PDF text; the model cannot supply executable code, Zotero item keys, or drawing coordinates. Repeated saves use batch tags to avoid duplicates. Previews and saved annotation references remain in local conversation history, and copying a response includes its quotations and comments.
-
-This preview annotates text in the current PDF only. It does not draw arbitrary circles, interpret figures, perform OCR, or annotate other papers. It reads at most 80 pages and 110,000 characters; skipped or omitted pages are disclosed. It uses Zotero reader internals that may change between versions. This remains a preview while broader document layouts and model responses are evaluated.
-
-## Interface language
-
-Open **Settings** in the sidebar and choose **Chinese** or **English** under **Interface language**. The settings preview changes immediately; click **Save settings** to apply the language to the sidebar, history page, source labels, and status messages. The choice is saved across restarts. Existing installations keep Chinese until you change it.
-
-Changing the interface language preserves unsent questions, quotations, and unsaved endpoint fields. It does not translate saved conversations, paper titles, or your custom system prompt. To change the language of model answers, edit the system prompt or ask the model in your preferred language.
-
-## Configure an endpoint and model
-
-Open **Settings** in the assistant, or its pane in Zotero Settings. Add an endpoint with a name, Base URL, and API key, then add a model with a display name and the provider's actual model ID. Leaving the key field blank preserves an existing key; removing it requires the separate clear action.
-
-Accepted URL examples:
+Accepted address shapes include:
 
 ```text
 https://api.example.com/v1
-https://gateway.example.com/custom/v1
-https://gateway.example.com/v1/chat/completions
+https://gateway.example.com/custom/v1/chat/completions
 http://127.0.0.1:1234/v1
 ```
 
-Replace these examples with your provider's address. Public endpoints must use HTTPS. HTTP is supported for local loopback addresses. URLs cannot contain credentials, query parameters, or fragments.
+Use your provider's address. Public endpoints require HTTPS; HTTP is supported for local loopback addresses. The endpoint must accept Chat Completions `model`, `messages`, and `stream` fields. Native Anthropic Messages, Gemini, and Responses protocols need a compatible gateway. Endpoint cards expand for editing, and multiple models can share an endpoint.
 
-The endpoint must support the Chat Completions `model`, `messages`, and `stream` fields. Native Responses, Anthropic Messages, and Gemini protocols require a compatible gateway. Endpoint cards start collapsed and show the name, host, and model count. Expand a card to edit details; adding an endpoint opens it automatically. Model and key drafts are retained when a card is collapsed. Multiple models can share an endpoint, and different endpoints can use separate keys. The connection test sends a short request to the selected provider and may incur usage charges; it does not create a conversation.
+The connection-test button sends a short request to the selected provider and may incur charges. It does not add a conversation. Plugin use is free; model-provider usage is separate.
 
 <details>
-<summary>Settings: collapsed endpoints, interface language, and message color</summary>
+<summary>Settings: endpoints, language, and message appearance</summary>
 
-<img src="docs/images/settings.png" width="740" alt="AI Reader settings with an English language selector, a collapsed endpoint card, a full-width system prompt, and compact color controls" />
+<img src="docs/images/settings.png" width="740" alt="Settings with an English language selector, collapsed endpoint card, prompt editor, and compact message-color controls" />
+
+Choose **Chinese** or **English** under **Interface language**, or change the bubble color under **Chat appearance**, then save. Language changes translate the interface while preserving saved messages, paper titles, and your custom system prompt. To change the answer language, ask the model or edit your prompt.
 
 </details>
 
-## Current paper and on-demand library lookup
+## Reading workflow
 
-Two permissions are saved per conversation. Both are enabled by default:
+Try a question such as:
 
-- **Read paper** reads the current paper's local PDF before answering.
-- **Search library as needed** allows the assistant to look up other papers when the current question needs a comparison or additional literature evidence.
+> Explain the System Overview section and show which pages support your explanation.
 
-Library lookup covers the **same Zotero library**, including papers outside the current collection. It does not search other Zotero libraries or the web, and does not download missing papers.
+> What assumptions does this method make, and which limitations are stated in the paper?
 
-Enabling lookup does not attach related PDFs to every question. After preparing any enabled current-paper evidence, the selected model makes a bounded routing decision. The routing prompt asks it to keep explanations, summaries, translations, and follow-up questions about the current paper on that paper alone. A positive decision can trigger a library search and extraction from up to three local PDFs. If the search matches explicitly named papers, it returns those matches without filling unused slots with broad topic matches. A previous comparison does not automatically carry those PDFs into the next question. If the routing decision fails, the plugin skips the lookup, keeps any available current-paper evidence, and reports the failure.
+> Compare this paper with another paper in my library. Separate their claims from your interpretation.
 
-Routing uses an additional short request to the selected endpoint. It receives the current question, the last three questions, the current paper's title, and a bounded excerpt of the current paper when reading is enabled. It does not receive other papers' contents before deciding to search. Disable **Search library as needed** to skip both routing and library lookup. Disable both permissions to send only the question, manual quotations, and completed conversation history.
+Two per-conversation permissions control retrieval:
 
-Short papers can be supplied in full. Longer papers use relevant pages and nearby passages. The current paper has a material budget of about 90,000 characters, and the combined evidence budget is 130,000 characters. Partial coverage is disclosed. Missing, encrypted, scanned, or otherwise unreadable PDFs are not treated as read. The plugin does not perform OCR, and text extraction may omit figures, complex equations, or layout relationships.
+| Setting | Behavior |
+| --- | --- |
+| Read paper | Read the current paper's local PDF before answering. |
+| Search library as needed | Allow a model decision about whether to search other papers in the same library. |
 
-Answers with retrieved evidence have a source list showing the actual papers and pages supplied for that round. A citation such as `[S1 p.4]` opens the corresponding local PDF page. Pages are counted from the first page of the PDF, which may differ from printed page numbers. Source titles wrap above a separate page-number row.
+Both are enabled by default. Library lookup can read up to three related local PDFs. It does not search the web, download missing papers, or automatically attach other papers to every question. Routing uses an additional short request containing the current question, recent questions, paper title, and a bounded current-paper excerpt when enabled. A routing failure skips library lookup and preserves available current-paper evidence.
 
-## Conversations and history
+Short PDFs can be supplied in full; longer ones use selected pages and nearby passages. Text extraction can miss figures, equations, or layout relationships. Scans need OCR in another tool. Treat page citations as a way to inspect the evidence, and check the PDF when accuracy matters. PDF page numbers count from the first page of the file.
 
-Long user messages show a preview of about six lines, including quoted text. Use **Show more** and **Show less** to expand or collapse a message. Short messages and assistant answers remain fully visible. Copying, exporting, and sending conversation context always use the complete text.
+Press **Enter** to send and **Shift+Enter** for a newline. Select PDF text and choose **Ask AI** to add an editable quotation without sending it. Use the copy icon below a message, or copy a full conversation as Markdown from **History**. Completed turns are sent with follow-up questions; switching providers sends that conversation to the newly selected endpoint. Failed and stopped turns are excluded from subsequent context.
 
-- Press Enter to send, Shift+Enter for a newline, or Cmd/Ctrl+Enter to send.
-- Select PDF text and choose **Ask AI** to add an editable quotation. Adding a quotation does not send a request.
-- Continue in the same input after an answer. Long responses scroll within the message area.
-- Switch models to continue the conversation with a different model. Each answer keeps its original endpoint and model label.
-- Stop an active request or retry an incomplete round. Failed and stopped rounds are excluded from later conversation context.
-- Open **History** for a separate history page. Cards show the conversation title, paper, update time, latest message, and round count. Search or filter by current paper/all history, select a card to enter, or return to the active conversation. Drafts are preserved when switching.
-- Rename or delete an individual conversation from its card. Deletion requires confirmation.
-- Copy a message using the icon below it, or copy the current conversation as Markdown from history.
+## Release channels
 
-Answers support Markdown, code blocks, and local LaTeX rendering. Completed conversation history is sent with the next question. Switching providers sends that history to the newly selected provider. If the provider reports an oversized context, disable library lookup, choose a model with a larger context window, or start a new conversation.
+| | Stable: 1.3.2 | Preview: 1.4.0-beta.2 |
+| --- | --- | --- |
+| Paper Q&A, citations, on-demand library lookup, history | Available | Available |
+| Fold long user messages with Show more / Show less | Not included | Available |
+| Review and save AI-proposed PDF annotations | Not included | Experimental |
+| Get it | [Release XPI](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.2) | [Source branch](https://github.com/kcodea516/zotero-ai-reader/tree/codex/annotation-agent-preview) |
 
-## Message colors
+The preview is available from source; the stable XPI does not contain its extra features. Follow the [build instructions](#build-from-source), switching to `codex/annotation-agent-preview` before installing dependencies.
 
-User messages have a light blue background by default (`#eaf3ff`). In **Settings → Chat appearance**, choose a color or enter a six-digit hex value. The preview updates immediately. Click **Save settings** to apply the color to existing and new user messages; the plugin selects black or white text for contrast. **Reset color** resets the color preview without changing endpoint or model settings; click **Save settings** to apply the reset. Assistant messages retain their existing appearance.
+In the preview, **Annotation agent** proposes up to eight text highlights or underlines with comments. It verifies original passages against local PDF coordinates, lets you inspect and select them, and writes only after you click **Save selected annotations**. Unmatched or ambiguous passages cannot be saved. **Undo this batch** moves generated annotations to Trash; edited annotations block undo so their contents are preserved. The preview supports text, not arbitrary circles, OCR, or figure interpretation. It reads at most 80 pages and 110,000 characters and discloses omitted coverage.
+
+The preview passed native checks with a synthetic PDF and fake model responses on macOS/Zotero 10.0.6. Broader PDF layouts and provider-specific proposal quality need more testing. Its [validation record](https://github.com/kcodea516/zotero-ai-reader/blob/codex/annotation-agent-preview/VALIDATION.md) includes the scope and reproducible fixtures.
 
 ## Data and privacy
 
-Conversations and non-secret settings are saved in the plugin's directory inside the Zotero profile. They are not synced through Zotero. API keys use Zotero's system secret storage and login manager. If encrypted storage is unavailable, the key is kept only for the current session and the interface reports this limitation.
+Conversations and non-secret settings stay in the plugin's directory within the Zotero profile and are not synced through Zotero. Keys use Zotero's encrypted storage and login manager. If encrypted storage is unavailable, the key remains session-only and the interface reports that limitation.
 
-Requests go directly to the endpoint you configure. Enabled reading permissions can send local paper text, including private documents, to that provider. The provider's own data-handling terms apply. Reading and lookup also increase request size and provider usage.
+Requests go directly to your configured endpoint. Enabled reading permissions can send local paper text, including private documents, to that provider. Disable both reading permissions to send only your question, manual quotations, and completed conversation history. Provider terms and usage charges apply, including to local endpoints that forward requests elsewhere.
 
-Extracted PDF text is cached in memory. Conversation files save questions, answers, reading permissions, and source metadata, without saving the automatically extracted PDF corpus. Model answers remain part of the saved conversation. The plugin does not upload PDFs, extracted text, keys, or private conversations to this GitHub repository. Remote images in model responses are not loaded automatically.
+Extracted text is cached in memory. Saved chats contain questions, answers, reading permissions, and source metadata; automatically extracted PDF corpora are not saved with ordinary chats. The annotation preview also saves its proposed quotations and comments. Remote images in answers are not loaded automatically. The plugin does not upload your papers, keys, or conversations to this GitHub repository.
 
-## Troubleshooting
+## Help and contribute
 
-- **Authentication or model errors:** check the endpoint, key permissions, quota, and actual model ID.
-- **Streaming incompatibility:** disable streaming in the endpoint settings and retry.
-- **Missing original text:** download the attachment and confirm the PDF contains selectable text. Scans need OCR in another tool.
-- **Incomplete paper coverage:** inspect the source pages and partial-excerpt notice, and check figures or equations in the PDF itself.
-- **History save errors:** check profile permissions and available disk space before quitting Zotero.
+Use [GitHub Issues](https://github.com/kcodea516/zotero-ai-reader/issues/new/choose) for bugs, questions, and feature requests. Include the plugin version, Zotero version, operating system, steps to reproduce, and expected behavior. For endpoint problems, include the provider/model and whether streaming is enabled. Remove keys and private material from screenshots or logs.
+
+Help is especially useful with Windows/Linux compatibility, different PDF layouts, endpoint behavior, accessibility, and clearer documentation. Small pull requests and reproducible reports both help. If you would like to maintain a part of the plugin over time, open an issue describing the area you want to work on. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and review expectations.
+
+<details>
+<summary>Common troubleshooting steps</summary>
+
+- Authentication/model errors: check the endpoint, key permissions, quota, and actual model ID.
+- Streaming errors: disable streaming for that endpoint and retry.
+- Missing paper text: download the attachment and check that its text is selectable.
+- Incomplete evidence: inspect the supplied page list and check figures and equations in the PDF.
+- History save errors: check profile permissions and disk space before quitting Zotero.
+
+</details>
 
 ## Build from source
 
 Use Node.js 24 or newer and Python 3:
 
 ```sh
+git clone https://github.com/kcodea516/zotero-ai-reader.git
+cd zotero-ai-reader
+# For the experimental annotation preview:
+# git switch codex/annotation-agent-preview
 npm ci
 npm run typecheck
 npm test
 npm run build
 ```
 
-The package is written to `build/zotero-ai-reader-1.3.2.xpi`. Source code is in `src/`, Zotero resources in `addon/`, and tests in `tests/`. The package includes local rendering libraries and fonts; installed users do not need Node.js. CI checks types, runs unit tests, builds the XPI, and uploads it as an artifact. Native Zotero integration fixtures are documented in [VALIDATION.md](VALIDATION.md).
+The XPI is written to `build/`, with the version from `package.json` in its filename. Source lives in `src/`, Zotero resources in `addon/`, and tests in `tests/`. Rendering libraries and fonts ship with the package. CI runs type checks, unit tests, and the build; native fixtures are documented in [VALIDATION.md](VALIDATION.md).
 
-## Feedback and contribution
-
-Open an [issue](https://github.com/kcodea516/zotero-ai-reader/issues) with your Zotero version, operating system, reproduction steps, and a redacted screenshot. Do not include API keys, private conversation logs, or papers you are not allowed to share. Pull requests are welcome.
-
-This is an independent Zotero plugin under the [MIT license](LICENSE), with no affiliation to the Zotero project.
+Zotero AI Reader is an independent plugin under the [MIT license](LICENSE), with no affiliation to the Zotero project.
