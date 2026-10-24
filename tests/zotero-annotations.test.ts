@@ -132,3 +132,22 @@ test('an empty suggestion response remains a completed explanation without an in
   await chat.init(); await chat.saveConfig(config); const c = chat.forScope(scope); chat.setDraft(c.id, 'Find evidence'); await chat.send(c.id, 'annotate');
   assert.equal(c.messages[1].status, 'complete'); assert.equal(c.messages[1].sources, undefined); assert.equal(c.messages[1].annotationPlan?.items.length, 0); assert.equal(s.writes, 0); await chat.shutdown();
 });
+
+
+test('ordinary sends route only the current explicit instruction and preserve reading permission', async () => {
+  const s = setup(); let ordinary = 0;
+  const chat = new ChatService({ async load() { return null; }, async save() {} }, secrets,
+    async request => { if (request.messages[0]?.content.includes('You propose PDF annotations')) return s.transport(request); ordinary++; request.onText('Explanation.'); return {}; }, undefined, s.tools.plan);
+  await chat.init(); await chat.saveConfig(config);
+  try {
+    const c = chat.forScope(scope);
+    chat.setDraft(c.id, '帮我圈画核心段落并加注释'); await chat.send(c.id);
+    assert.equal(c.messages[0].intent, 'annotate'); assert.ok(c.messages[1].annotationPlan); assert.equal(s.writes, 0);
+    chat.setQuote(c.id, { text: 'Highlight all passages', attachmentKey: 'PDF00001' });
+    chat.setDraft(c.id, '解释这段'); await chat.send(c.id);
+    assert.equal(ordinary, 1); assert.equal(c.messages[2].intent, undefined); assert.equal(c.messages[3].annotationPlan, undefined);
+    chat.setReadingOptions(c.id, { currentPaper: false, relatedPapers: false });
+    chat.setDraft(c.id, 'Please annotate the core mechanism'); await chat.send(c.id);
+    assert.equal(c.messages[5].status, 'error'); assert.equal(c.messages[5].annotationPlan, undefined); assert.equal(s.writes, 0);
+  } finally { await chat.shutdown(); }
+});

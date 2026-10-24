@@ -107,12 +107,6 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   messages.setAttribute('aria-live', 'off');
   const empty = el('div', 'zar-empty');
   empty.append(el('p', '', '直接询问当前论文的章节、方法或实验，无需粘贴原文。'), el('p', '', '要对照其他论文，可在问题中写出简称或标题。也可以选中文字后点击“询问 AI”。'));
-  const annotationLabel = el('label', 'zar-annotation-mode');
-  const annotationCheck = el('input'); annotationCheck.type = 'checkbox';
-  const annotationLabelText = doc.createTextNode('标注 Agent');
-  annotationLabel.append(annotationCheck, annotationLabelText);
-  annotationLabel.hidden = !host.annotations;
-  paper.append(annotationLabel);
   const compose = el('div', 'zar-compose');
   const quoteBox = el('div', 'zar-quote');
   const quoteHeader = el('div', 'zar-row');
@@ -163,8 +157,6 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     historyQuery.placeholder = t('搜索对话', 'Search chats');
     historyQuery.setAttribute('aria-label', t('搜索对话内容与标题', 'Search chat contents and titles'));
     messages.setAttribute('aria-label', t('对话记录', 'Conversation messages'));
-    annotationLabelText.data = t('标注 Agent', 'Annotation agent');
-    annotationLabel.title = t('按指令生成当前 PDF 的高亮和注释预览，确认后才写入。', 'Draft highlights and comments for this PDF; save only after review.');
     empty.children[0].textContent = t('直接询问当前论文的章节、方法或实验，无需粘贴原文。', 'Ask about the current paper’s sections, methods, or experiments without pasting the original.');
     empty.children[1].textContent = t('要对照其他论文，可在问题中写出简称或标题。也可以选中文字后点击“询问 AI”。', 'Name another paper to compare it, or select a passage and choose “Ask AI”.');
     quoteInput.setAttribute('aria-label', t('本次提问引用，可编辑', 'Quoted passage for this question, editable'));
@@ -200,7 +192,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     if (!value || host.service.isBusy(value.id) || !(draft.value.trim() || value.quote?.text.trim())) return;
     if (!modelSelect.value) { actionError = '请先在设置中添加 API 和模型。'; renderStatus(); return; }
     host.service.setDraft(value.id, draft.value);
-    run(() => host.service.send(value.id, annotationCheck.checked ? 'annotate' : undefined));
+    run(() => host.service.send(value.id));
     render(); draft.focus();
   }
   function statusLabel(value: string): string {
@@ -507,7 +499,6 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     const pinned = renderedConversationId !== value.id || messages.scrollHeight - messages.scrollTop - messages.clientHeight < 48;
     renderedConversationId = value.id;
     const foreign = !sameScope(value.scope, scope);
-    if (foreign) annotationCheck.checked = false;
     paperLabel.textContent = foreign ? t('正在查看其他文献的会话', 'Chat for another paper') : t('当前文献', 'Current paper');
     paperTitle.textContent = value.scope.title; paperTitle.title = value.scope.title;
     returnButton.hidden = !foreign;
@@ -523,7 +514,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       copyTimers.delete(id); rendered.get(id)?.disclosure?.destroy(); rendered.delete(id);
     }
     if (draft.value !== value.draft) draft.value = value.draft;
-    draft.placeholder = annotationCheck.checked ? t('例如：标出核心设计，并用中文解释每处为什么重要', 'Highlight the main design choices and explain why each matters') : foreign ? t('继续这段会话…', 'Continue this chat…') : t('询问这篇文献…', 'Ask about this paper…');
+    draft.placeholder = foreign ? t('继续这段会话…', 'Continue this chat…') : t('询问这篇文献…', 'Ask about this paper…');
     const nextQuoteSignature = JSON.stringify([language, value.id, value.quote]);
     quoteBox.hidden = !value.quote;
     if (nextQuoteSignature !== quoteSignature) {
@@ -534,10 +525,8 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     const busy = host.service.isBusy(value.id);
     const reading = host.service.getReadingOptions(value.id);
     currentCheck.checked = reading.currentPaper; relatedCheck.checked = reading.relatedPapers;
-    annotationCheck.disabled = busy || !host.annotations || foreign;
-    annotationLabel.hidden = !host.annotations;
-    currentCheck.disabled = busy; relatedCheck.disabled = busy || annotationCheck.checked;
-    const sendLabel = annotationCheck.checked ? t('生成标注预览', 'Preview annotations') : t('发送', 'Send');
+    currentCheck.disabled = busy; relatedCheck.disabled = busy;
+    const sendLabel = t('发送', 'Send');
     sendButton.setAttribute('label', sendLabel); sendButton.setAttribute('aria-label', sendLabel);
     sendButton.hidden = busy; stopButton.hidden = !busy; stopControl.hidden = !busy;
     nativeTooltip(stopButton, t('正在生成，点击停止', 'Generating; click to stop'));
@@ -557,7 +546,6 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     scheduled = setTimeout(() => { scheduled = undefined; render(); }, 90);
   };
   const unsubscribe = host.service.subscribe(schedule);
-  annotationCheck.addEventListener('change', () => render());
   modelSelect.addEventListener('command', () => { const value = current(); if (value) run(() => host.service.setModel(value.id, modelSelect.value)); });
   historyScope.addEventListener('command', () => { allHistory = historyScope.value === 'all'; render(); });
   historyQuery.addEventListener('input', () => { query = historyQuery.value; render(); });
@@ -577,7 +565,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       const changed = !sameScope(scope, nextScope);
       if (changed) prepareNavigation();
       scope = { ...nextScope };
-      if (changed) { annotationCheck.checked = false; conversationId = host.service.forScope(scope).id; actionError = ''; historySignature = ''; }
+      if (changed) { conversationId = host.service.forScope(scope).id; actionError = ''; historySignature = ''; }
       render();
     },
     addQuote(quote) {

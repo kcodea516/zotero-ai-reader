@@ -1,5 +1,11 @@
 # 验证记录
 
+## Conversational annotations: 1.4.0-beta.3
+
+On 2026-10-24, TypeScript checks and all 112 automated tests passed. New tests cover direct Chinese and English annotation commands, ordinary questions, negated and quoted instructions, follow-up isolation, and disabled paper-reading permission. Routing uses the current user message and does not inspect quoted evidence or previous messages for commands. It is a conservative local command recognizer; ambiguous requests can remain ordinary chat.
+
+The update was installed and enabled in Zotero on macOS. The native annotation fixture passed all 17 checks: no mode toggle, direct chat-to-preview routing, unchanged input node, verified passage selection, narrow-sidebar layout, copy, local passage navigation, explicit save, undo, language switching, and an ordinary follow-up without further writes. The fixture used memory storage and simulated annotation tools; no real provider request or existing library annotation was changed. Exact PDF placement and real-model selection were not retested in this update.
+
 验证日期：2026-10-20 至 2026-10-21。
 
 使用本机 macOS、Zotero 10.0.6 和 Translate for Zotero 2.4.8。1.0.0 的核心功能测试使用独立配置目录和测试文献；1.0.1 的原生控件检查在用户已安装插件的日常配置中进行。

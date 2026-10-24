@@ -1,3 +1,4 @@
+import { requestsAnnotation } from './annotation-intent.ts';
 import { annotationMarkdown, isAnnotationPlan, type AnnotationPlanner, type AnnotationReceipt } from './annotations.ts';
 import { bilingualError, ERROR_TRANSLATIONS } from './i18n-errors.ts';
 import { getLanguage, tr, localizeError, type UILanguage } from './i18n.ts';
@@ -258,7 +259,7 @@ export class ChatService {
     if (!content && !conversation.quote?.text.trim()) return;
     const now = Date.now();
     const requestId = uuid();
-    const user: Message = { id: uuid(), role: 'user', content, intent, quote: conversation.quote ? clone(conversation.quote) : undefined, createdAt: now, status: 'complete', requestId };
+    const user: Message = { id: uuid(), role: 'user', content, intent: intent ?? (requestsAnnotation(content) ? 'annotate' : undefined), quote: conversation.quote ? clone(conversation.quote) : undefined, createdAt: now, status: 'complete', requestId };
     const assistant: Message = { id: uuid(), role: 'assistant', content: '', createdAt: now, status: 'streaming', requestId };
     conversation.messages.push(user, assistant);
     conversation.draft = '';

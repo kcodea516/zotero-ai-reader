@@ -1,6 +1,6 @@
 {
   "name": "zotero-ai-reader",
-  "version": "1.4.0-beta.2",
+  "version": "1.4.0-beta.3",
   "private": true,
   "description": "Zotero AI reader with local paper context, cross-paper retrieval, and OpenAI-compatible APIs",
   "type": "module",

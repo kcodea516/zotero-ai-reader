@@ -41,12 +41,10 @@ export async function runAnnotationChecks(win: Window): Promise<string[]> {
     (details || doc.documentElement).append(overlay); panel = mountSidebar(overlay, scope, host); await pause();
     const find = <T extends Element>(selector: string): T => { const element = overlay.querySelector(selector); if (!element) throw new Error(`Missing ${selector}`); return element as T; };
     const button = (name: string) => { const node = Array.from(overlay.querySelectorAll<NativeButton>('button')).find(n => n.getAttribute('label') === name); if (!node) throw new Error(`Missing button ${name}`); return node; };
-    const mode = find<HTMLInputElement>('.zar-annotation-mode input');
-    check('annotation mode is visible and starts unchecked', !mode.checked && !mode.closest<HTMLElement>('label')!.hidden);
-    mode.checked = true; mode.dispatchEvent(new realm.Event('change', { bubbles: true })); await pause();
+    check('annotation mode toggle is absent', !overlay.querySelector('.zar-annotation-mode'));
     const draft = find<NativeEditable>('.zar-input'); draft.focus(); const input = draft.ref!;
     input.value = 'Highlight the core mechanism'; input.dispatchEvent(new realm.Event('input', { bubbles: true }));
-    button('Preview annotations').doCommand();
+    button('Send').doCommand();
     await until('annotation preview is shown', () => !!overlay.querySelector('.zar-annotation-card'));
     check('planning writes nothing and skips normal chat', planned === 1 && writes === 0 && ordinary === 0);
     check('input node survives plan rendering', draft.ref === input && input.isConnected);
@@ -65,7 +63,6 @@ export async function runAnnotationChecks(win: Window): Promise<string[]> {
     check('undo applies only to the preview batch', undos === 1 && button('Save selected annotations').disabled);
     await service.saveConfig({ ...config, language: 'zh-CN' }); await pause();
     check('annotation preview labels switch to Chinese', overlay.textContent?.includes('标注预览') || overlay.textContent?.includes('本批标注已撤销'));
-    mode.checked = false; mode.dispatchEvent(new realm.Event('change', { bubbles: true })); await pause();
     service.setDraft(conversation.id, 'Follow-up question'); await pause(); button('发送').doCommand();
     await until('ordinary chat still works after an annotation turn', () => ordinary === 1 && !service.isBusy(conversation.id));
     check('no extra annotation write occurs on ordinary follow-up', writes === 1 && undos === 1);

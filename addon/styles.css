@@ -189,7 +189,6 @@
 }
 
 /* Annotation agent previews use native actions and plain-text comments. */
-.zar-root .zar-annotation-mode { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
 .zar-root .zar-annotation-heading { font-weight: 600; margin-block: 10px; }
 .zar-root .zar-annotation-card { border: 1px solid var(--zar-border); border-radius: 6px; padding: 9px; margin-block: 9px; min-width: 0; }
 .zar-root .zar-annotation-choice { display: flex; align-items: start; gap: 6px; font-size: .9em; }

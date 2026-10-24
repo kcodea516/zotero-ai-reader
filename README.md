@@ -103,7 +103,7 @@ Press **Enter** to send and **Shift+Enter** for a newline. Select PDF text and c
 
 ## Release channels
 
-| | Stable: 1.3.2 | Preview: 1.4.0-beta.2 |
+| | Stable: 1.3.2 | Preview: 1.4.0-beta.3 |
 | --- | --- | --- |
 | Paper Q&A, citations, on-demand library lookup, history | Available | Available |
 | Fold long user messages with Show more / Show less | Not included | Available |
@@ -112,7 +112,7 @@ Press **Enter** to send and **Shift+Enter** for a newline. Select PDF text and c
 
 The preview is available from source; the stable XPI does not contain its extra features. Follow the [build instructions](#build-from-source), switching to `codex/annotation-agent-preview` before installing dependencies.
 
-In the preview, **Annotation agent** proposes up to eight text highlights or underlines with comments. It verifies original passages against local PDF coordinates, lets you inspect and select them, and writes only after you click **Save selected annotations**. Unmatched or ambiguous passages cannot be saved. **Undo this batch** moves generated annotations to Trash; edited annotations block undo so their contents are preserved. The preview supports text, not arbitrary circles, OCR, or figure interpretation. It reads at most 80 pages and 110,000 characters and discloses omitted coverage.
+In the preview, ask directly in chat: "Highlight the core mechanism and add comments" or "帮我圈画关键段落并加注释". No separate mode is needed. The assistant proposes up to eight text highlights or underlines with comments. It verifies original passages against local PDF coordinates, lets you inspect and select them, and writes only after you click **Save selected annotations**. Unmatched or ambiguous passages cannot be saved. **Undo this batch** moves generated annotations to Trash; edited annotations block undo so their contents are preserved. The preview supports text, not arbitrary circles, OCR, or figure interpretation. It reads at most 80 pages and 110,000 characters and discloses omitted coverage.
 
 The preview passed native checks with a synthetic PDF and fake model responses on macOS/Zotero 10.0.6. Broader PDF layouts and provider-specific proposal quality need more testing. Its [validation record](https://github.com/kcodea516/zotero-ai-reader/blob/codex/annotation-agent-preview/VALIDATION.md) includes the scope and reproducible fixtures.
 
