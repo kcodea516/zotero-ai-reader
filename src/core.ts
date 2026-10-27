@@ -22,7 +22,7 @@ const uuid = () => globalThis.crypto?.randomUUID?.() ?? 'xxxxxxxx-xxxx-4xxx-yxxx
   const random = Math.floor(Math.random() * 16);
   return (char === 'x' ? random : (random & 3) | 8).toString(16);
 });
-const initialState = (): StoreState => ({ version: 1, config: { version: 1, endpoints: [], models: [], defaultModelId: '', systemPrompt: DEFAULT_SYSTEM_PROMPT, language: 'zh-CN', appearance: { userMessageColor: DEFAULT_USER_MESSAGE_COLOR } }, conversations: [], lastByScope: {} });
+const initialState = (): StoreState => ({ version: 1, config: { version: 1, endpoints: [], models: [], defaultModelId: '', systemPrompt: DEFAULT_SYSTEM_PROMPT, language: 'en-US', appearance: { userMessageColor: DEFAULT_USER_MESSAGE_COLOR } }, conversations: [], lastByScope: {} });
 
 function validateConfig(config: Config): void {
   if (!config || config.version !== 1 || !Array.isArray(config.endpoints) || !Array.isArray(config.models) || typeof config.defaultModelId !== 'string' || typeof config.systemPrompt !== 'string') throw bilingualError('AI 配置格式无效。', "The AI configuration format is invalid.");

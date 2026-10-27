@@ -183,8 +183,8 @@ test('serial persistence keeps newer edits and reports then recovers from save f
   const chat = new ChatService({ async load() { return null; }, async save(value) { active++; maximum = Math.max(maximum, active); try { await new Promise(resolve => setTimeout(resolve, 5)); if (fail) throw new Error('disk'); stored = copy(value); } finally { active--; } } }, secrets);
   await chat.init();
   const conversation = chat.createConversation(scope);
-  await assert.rejects(chat.flush(), /保存失败/);
-  assert.match(chat.storageError, /保存失败/);
+  await assert.rejects(chat.flush(), /could not be saved/);
+  assert.match(chat.storageError, /could not be saved/);
   fail = false;
   const first = chat.flush();
   chat.setDraft(conversation.id, '最新草稿');

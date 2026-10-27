@@ -30,6 +30,17 @@ async function ask(chat: ChatService, id: string, text = 'Explain the mechanism'
   chat.setDraft(id, text); await chat.send(id);
 }
 
+test('new installations use English while existing language choices are preserved', async () => {
+  for (const [saved, expected] of [[null, 'en-US'], ['zh-CN', 'zh-CN'], ['en-US', 'en-US'], [undefined, 'zh-CN']] as const) {
+    const config = { ...configuration(), language: saved === null ? undefined : saved };
+    const state = saved === null ? null : { version: 1 as const, config, conversations: [], lastByScope: {} };
+    const chat = new ChatService({ async load() { return state; }, async save() {} }, secrets);
+    await chat.init();
+    assert.equal(chat.getConfig().language, expected);
+    await chat.shutdown();
+  }
+});
+
 test('English request notices and default titles do not rewrite model prompts or content', async () => {
   const observed: PaperContextRequest[] = [];
   const f = await fixture(async request => { observed.push(request); return evidence; });
