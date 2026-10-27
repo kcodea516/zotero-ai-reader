@@ -230,14 +230,12 @@
 .zar-root .zar-image-tools:hover,.zar-root .zar-image-tools:focus-within { opacity:1;background:color-mix(in srgb,var(--material-background,Canvas) 90%,transparent); }
 .zar-root .zar-image-tools .zar-image-options { top:28px; }
 .zar-root .zar-attach-image { flex:0 0 auto;width:28px;height:28px; }
-.zar-root .zar-input-images { display:flex;flex-wrap:wrap;gap:7px;max-width:100%;margin:4px 0 9px; }
-.zar-root .zar-input-image { position:relative;flex:0 0 auto;width:72px;height:72px; }
-.zar-root .zar-input-image-open { display:block;padding:0;width:72px;height:72px;min-height:0;overflow:hidden;border:1px solid var(--zar-border);border-radius:8px;background:Canvas;cursor:zoom-in; }
-.zar-root .zar-input-image-open img { display:block;width:100%;height:100%;object-fit:cover; }
+.zar-root .zar-input-images { display:flex;flex-wrap:wrap;align-items:flex-start;gap:7px;max-width:100%;margin:4px 0 4px; }
+.zar-root .zar-message-user .zar-input-images + p { margin-top:0; }
+.zar-root .zar-input-image { position:relative;flex:0 0 auto;width:72px;height:auto; }
+.zar-root .zar-input-image-open { display:block;padding:0;width:72px;height:auto;min-height:0;max-height:none;margin:0;overflow:hidden;border:1px solid var(--zar-border);border-radius:8px;background:Canvas;cursor:zoom-in; }
+.zar-root .zar-input-image-open img { display:block;width:100%;height:auto;max-height:72px;object-fit:contain; }
 .zar-root .zar-input-image-remove { position:absolute;top:2px;right:2px;display:flex;align-items:center;justify-content:center;width:18px;height:18px;min-height:0;border:0;padding:0;border-radius:50%;background:#15181ac0;color:white;font-size:16px;line-height:1;cursor:pointer; }
 .zar-root .zar-draft-images { display:flow-root;padding:2px 4px 0; }
 .zar-root .zar-draft-images .zar-input-images { align-items:flex-start;margin:0 0 2px; }
-.zar-root .zar-draft-images .zar-input-image { height:auto; }
-.zar-root .zar-draft-images .zar-input-image-open { height:auto;max-height:none;margin:0; }
-.zar-root .zar-draft-images .zar-input-image-open img { height:auto;max-height:72px;object-fit:contain; }
 @media (prefers-reduced-motion:reduce) { .zar-root .zar-image-tools { transition:none; } }
