@@ -47,9 +47,6 @@ Paste a screenshot, drop an image into the composer, or use the **+** button. It
 
 Ask for a PNG diagram in the conversation. AI Reader uses the selected endpoint's saved key and image model, then displays the result in the chat. Select an image to zoom, use the icon in its upper-right corner to copy it, or save it from the adjacent menu. PNG, JPEG, WebP, and complete SVG diagrams can be viewed; SVGs also have options to save or copy the source.
 
-<p align="center"><img src="docs/images/image-output.png" width="540" alt="A generated diagram displayed in the AI Reader conversation with image controls in the upper-right corner" /></p>
-<p align="center"><sub>A generated diagram in an earlier preview, shown with the Chinese interface.</sub></p>
-
 You can attach a reference image and ask for a new image based on it. This uses your provider's Images Edit API. Image generation requires a provider and model that support the corresponding Images API; provider charges may apply.
 
 ### Annotate a paper · preview
