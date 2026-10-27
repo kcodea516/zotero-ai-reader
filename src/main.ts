@@ -1,3 +1,4 @@
+import { closeImageViewer } from './image-viewer.ts';
 import { imageDataURL, MAX_IMAGE_BYTES, checkInputImages } from './image-data.ts';
 import { createZoteroAnnotationTools } from './zotero-annotations.ts';
 import { ChatService } from './core';
@@ -75,6 +76,7 @@ function injectWindow(win: any): void {
     added.push(link);
   }
   const cleanup = () => {
+    closeImageViewer(doc);
     windows.delete(doc);
     cleanupSafely(() => win.removeEventListener('unload', cleanup), 'window-listener-cleanup-failed');
     for (const element of added.splice(0)) cleanupSafely(() => element.remove(), 'window-style-cleanup-failed');

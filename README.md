@@ -47,6 +47,8 @@ Paste a screenshot, drop an image into the composer, or use the **+** button. It
 
 Ask for a PNG diagram in the conversation. AI Reader uses the selected endpoint's saved key and image model, then displays the result in the chat. Select an image to zoom, use the icon in its upper-right corner to copy it, or save it from the adjacent menu. PNG, JPEG, WebP, and complete SVG diagrams can be viewed; SVGs also have options to save or copy the source.
 
+Open an SVG diagram to play its animation and click its controls. The viewer has pause, restart, zoom, and a timeline for SVG/CSS animations. Scripted diagrams can use their own buttons and sliders; restart resets the diagram. Saving or copying the SVG keeps its animation and scripts. The preview runs offline, so diagrams should include their code and images rather than load them from other sites.
+
 You can attach a reference image and ask for a new image based on it. This uses your provider's Images Edit API. Image generation requires a provider and model that support the corresponding Images API; provider charges may apply.
 
 ### Annotate a paper · preview
@@ -91,7 +93,7 @@ Choose the interface language, default model, system prompt, and message color h
 
 ## Stable and preview
 
-| Feature | Stable 1.3.2 | Preview 1.4.0-beta.7 |
+| Feature | Stable 1.3.2 | Preview 1.4.0-beta.10 |
 | --- | --- | --- |
 | Paper Q&A, citations, library lookup, history | Yes | Yes |
 | Fold long user messages | — | Yes |

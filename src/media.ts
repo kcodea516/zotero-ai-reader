@@ -83,7 +83,7 @@ function mountImage(doc: Document, dataURL: string, language: UILanguage, action
   const create = (tag: string, cls = '') => { const el = doc.createElementNS('http://www.w3.org/1999/xhtml',tag) as HTMLElement; el.className=cls; return el; };
   const figure=create('figure','zar-media'), stage=create('div','zar-media-stage'), tools=create('div','zar-image-tools');
   const img=create('img','zar-media-image') as HTMLImageElement; img.src=dataURL; img.alt=tr(language,'AI 生成的图片','AI-generated image'); img.tabIndex=0; img.setAttribute('role','button'); img.setAttribute('aria-label',tr(language,'点击放大图片','Open full-size image'));
-  img.addEventListener('click',()=>openImageViewer(doc,img,language)); img.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openImageViewer(doc,img,language);}});
+  img.addEventListener('click',()=>openImageViewer(doc,img,language,source)); img.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openImageViewer(doc,img,language,source);}});
   const status=create('span','zar-image-status');status.setAttribute('role','status');
   const raster=async (format='image/png') => {
     if (!img.complete) await new Promise<void>((resolve,reject)=>{img.addEventListener('load',()=>resolve(),{once:true});img.addEventListener('error',()=>reject(new Error('Image failed')),{once:true});});
@@ -102,10 +102,10 @@ function mountImage(doc: Document, dataURL: string, language: UILanguage, action
   if(actions?.saveImage){
     option('保存 PNG','Save PNG',async()=>actions.saveImage!(await raster(),'ai-reader-diagram.png'));
     option('保存 JPG','Save JPG',async()=>actions.saveImage!(await raster('image/jpeg'),'ai-reader-diagram.jpg'));
-    if(vector)option('保存 SVG','Save SVG',async()=>actions.saveImage!(dataURL,'ai-reader-diagram.svg'));
+    if(vector)option('保存 SVG','Save SVG',async()=>actions.saveImage!('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(source || vector),'ai-reader-diagram.svg'));
     else option('保存原图','Save original',async()=>actions.saveImage!(dataURL,'ai-reader-diagram.'+(dataURL.startsWith('data:image/jpeg')?'jpg':dataURL.startsWith('data:image/webp')?'webp':'png')));
   }
-  if(vector && actions)option('复制 SVG 代码','Copy SVG',()=>actions.copy(vector));
+  if(vector && actions)option('复制 SVG 代码','Copy SVG',()=>actions.copy(source || vector));
   if(source){const codeBox=create('pre','zar-media-source');codeBox.hidden=true;const code=create('code');code.textContent=source;codeBox.append(code);
     option('查看 SVG 代码','View SVG code',()=>{codeBox.hidden=!codeBox.hidden;});figure.append(codeBox);
   }

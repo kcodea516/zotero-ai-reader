@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0-beta.10 (preview)
+
+- Open SVG diagrams in an interactive viewer with playback, pause, restart, and zoom.
+- Support SVG/CSS animation seeking and pause common JavaScript animation loops and timers.
+- Keep click handlers, local scripts, and embedded controls in an offline sandbox.
+- Preserve animation and scripts when saving or copying SVG source; keep chat thumbnails and raster exports static.
+- Release the frame and its network observer when closing the viewer or unloading the plugin.
+
 ## 1.4.0-beta.6 (preview)
 
 - Attach PNG/JPG/WebP images with the native picker, screenshot paste, or file drop.

@@ -201,3 +201,13 @@ return await fixture.AIReaderSidebarChecks.runSidebarChecks(win);
 ```
 
 先安装当前版本插件，使其样式已加载到 Zotero 主窗口。成功时返回检查名称列表；失败时返回具体检查名称。检查使用内存会话和模拟响应，结束后移除测试覆盖层。
+
+## Interactive SVG preview: 1.4.0-beta.10
+
+Checked on Zotero 10.0.6 on macOS, 2026-10-27. TypeScript checks and all 129 automated tests passed. Native checks in `zotero-svg.integration.ts`, `zotero-graphics.integration.ts`, and `zotero-image-chat.integration.ts` passed 56 assertions, including asynchronous completion checks.
+
+The SVG fixture covers SMIL and CSS animation, script timers, `requestAnimationFrame`, inline click handlers, pause/resume, timeline seeking, restart, zoom, and frame cleanup. It verifies an opaque origin, denied access to the Zotero window and privileged APIs, blocked storage and network access, and original SVG preservation during copy and save. Raster copying, PNG/JPG export, image generation with a simulated provider, and ordinary chat were also checked.
+
+After installation, an existing SVG from chat history loaded with eight animation elements. Its timeline advanced, and the native pause button stopped it. Tests used no real model requests and made no library or annotation changes.
+
+The viewer runs self-contained diagrams offline. Timeline seeking controls SVG/CSS animations; restarting resets scripted state. Pause covers SMIL, CSS/Web Animations, and scripts using animation-frame callbacks or function-based timers. It does not suspend arbitrary JavaScript execution or reconstruct scripted state at an arbitrary timeline position. PNG/JPG copying and export use the static thumbnail.

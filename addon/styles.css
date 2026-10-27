@@ -239,3 +239,16 @@
 .zar-root .zar-draft-images { display:flow-root;padding:2px 4px 0; }
 .zar-root .zar-draft-images .zar-input-images { align-items:flex-start;margin:0 0 2px; }
 @media (prefers-reduced-motion:reduce) { .zar-root .zar-image-tools { transition:none; } }
+
+.zar-image-viewer .zar-svg-frame { display:block;border:0;margin:auto;max-width:none;flex:none;background:white; }
+.zar-image-viewer .zar-viewer-toolbar { flex-wrap:wrap; }
+.zar-image-viewer .zar-svg-controls { display:flex;align-items:center;gap:10px; }
+.zar-image-viewer .zar-svg-controls input[type="range"] { width:160px;height:24px;min-height:0;padding:0;margin:0;accent-color:#72a8ff; }
+.zar-image-viewer .zar-viewer-time { font-variant-numeric:tabular-nums;min-width:4.5em; }
+.zar-image-viewer .zar-viewer-message { text-align:center;font-size:13px; }
+.zar-image-viewer .zar-viewer-message:empty { display:none; }
+.zar-image-viewer .zar-viewer-viewport img[hidden] { display:none; }
+.zar-image-viewer .zar-svg-controls input[type="range"] { appearance:none;background:transparent;border:0; }
+.zar-image-viewer .zar-svg-controls input[type="range"]::-moz-range-track { height:4px;border-radius:2px;background:#ffffff40; }
+.zar-image-viewer .zar-svg-controls input[type="range"]::-moz-range-progress { height:4px;border-radius:2px;background:#72a8ff; }
+.zar-image-viewer .zar-svg-controls input[type="range"]::-moz-range-thumb { width:12px;height:12px;border:0;border-radius:50%;background:#fff; }

@@ -28,7 +28,7 @@ export async function runGraphicsChecks(win: Window): Promise<string[]> {
     button('Save PNG').click(); await wait(() => saves.length === 1);
     check('PNG save receives image bytes', saves[0].startsWith('ai-reader-diagram.png:data:image/png;base64,'));
     button('Save SVG').click(); await wait(() => saves.length === 2);
-    check('SVG save receives the sanitized vector', saves[1].startsWith('ai-reader-diagram.svg:data:image/svg+xml;'));
+    check('SVG save receives the vector source', saves[1].startsWith('ai-reader-diagram.svg:data:image/svg+xml;'));
     button('Copy SVG').click(); await wait(() => copies.length === 1);
     check('vector copy preserves Chinese and shape text', copies[0].includes('视觉编码与推理'));
     button('View SVG code').click();
