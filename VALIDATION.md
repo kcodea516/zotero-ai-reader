@@ -1,5 +1,11 @@
 # 验证记录
 
+## SVG previews: 1.4.0-beta.4
+
+On 2026-10-27, TypeScript checks and all 113 automated tests passed. The final XPI was installed in Zotero on macOS. The native graphics fixture passed 20 checks for image decoding, narrow-sidebar sizing, surrounding Markdown, Chinese text, PNG conversion, copy/save payloads, original-code disclosure, standalone SVG, incomplete output, SVG without an explicit namespace, safe CSS, and rejection of active or external content.
+
+The fixture used synthetic diagrams and fake clipboard/file sinks. It did not call a model, change conversation history, write files through the save dialog, or replace the system clipboard. The native clipboard implementation follows Zotero's existing image-copy API; actual cross-application pasting and save-dialog file writes were not separately tested. Remote image URLs and dedicated image-generation APIs remain unsupported.
+
 ## Conversational annotations: 1.4.0-beta.3
 
 On 2026-10-24, TypeScript checks and all 112 automated tests passed. New tests cover direct Chinese and English annotation commands, ordinary questions, negated and quoted instructions, follow-up isolation, and disabled paper-reading permission. Routing uses the current user message and does not inspect quoted evidence or previous messages for commands. It is a conservative local command recognizer; ambiguous requests can remain ordinary chat.

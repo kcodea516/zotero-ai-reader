@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.0-beta.4 (preview)
+
+- Preview complete SVG diagrams directly in chat and keep the original code in a disclosure.
+- Add native actions to copy a PNG image, save PNG/SVG files, and copy sanitized SVG source.
+- Restrict previews to static local SVG content and preserve ordinary remote-image blocking.
+
 ## 1.4.0-beta.3
 
 - Request PDF highlights and comments directly in chat, without enabling a separate annotation mode.

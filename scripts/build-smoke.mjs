@@ -49,3 +49,5 @@ await build({
 });
 await build({ entryPoints: [resolve(root, 'tests/zotero-annotations.integration.ts')], bundle: true, format: 'iife', globalName: 'AIReaderAnnotationChecks', platform: 'browser', target: 'firefox140', outfile: resolve(root, 'build/annotation-checks.js') });
 console.log('Built sidebar, reading, history, settings, language and annotation checks for Zotero Run JavaScript');
+
+await build({ entryPoints: [resolve(root, 'tests/zotero-graphics.integration.ts')], bundle: true, format: 'iife', globalName: 'AIReaderGraphicsChecks', platform: 'browser', target: 'firefox140', outfile: resolve(root, 'build/graphics-checks.js') });

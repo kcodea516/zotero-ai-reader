@@ -280,6 +280,27 @@ export async function startup({ id = ADDON_ID, version = '', rootURI }: { id?: s
       Components.classes['@mozilla.org/widget/clipboardhelper;1']
         .getService(Components.interfaces.nsIClipboardHelper).copyString(text);
     },
+    async copyImage(png: string) {
+      if (!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(png) || png.length > 20_000_000) throw new Error('Invalid PNG');
+      const bytes = Uint8Array.from(atob(png.split(',')[1]), char => char.charCodeAt(0));
+      const image = Components.classes['@mozilla.org/image/tools;1'].getService(Components.interfaces.imgITools).decodeImageFromArrayBuffer(bytes.buffer, 'image/png');
+      const transfer = Components.classes['@mozilla.org/widget/transferable;1'].createInstance(Components.interfaces.nsITransferable);
+      transfer.init(null); transfer.addDataFlavor('application/x-moz-nativeimage'); transfer.setTransferData('application/x-moz-nativeimage', image);
+      Components.classes['@mozilla.org/widget/clipboard;1'].getService(Components.interfaces.nsIClipboard).setData(transfer, null, Components.interfaces.nsIClipboard.kGlobalClipboard);
+    },
+    async saveImage(dataURL: string, filename: string) {
+      if (!/^ai-reader-diagram\.(?:svg|png)$/.test(filename) || dataURL.length > 20_000_000) throw new Error('Invalid image');
+      let bytes: Uint8Array;
+      if (filename.endsWith('.svg') && dataURL.startsWith('data:image/svg+xml;charset=utf-8,')) bytes = new TextEncoder().encode(decodeURIComponent(dataURL.slice(dataURL.indexOf(',') + 1)));
+      else if (filename.endsWith('.png') && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(dataURL)) bytes = Uint8Array.from(atob(dataURL.split(',')[1]), char => char.charCodeAt(0));
+      else throw new Error('Invalid image');
+      const { FilePicker } = ChromeUtils.importESModule('chrome://zotero/content/modules/filePicker.mjs');
+      const picker = new FilePicker(); picker.init(Zotero.getMainWindow(), tr(getLanguage(service!.getConfig()), '保存图片', 'Save image'), picker.modeSave);
+      const extension = filename.endsWith('.svg') ? 'svg' : 'png';
+      picker.appendFilter(extension.toUpperCase(), '*.' + extension); picker.defaultString = filename; picker.defaultExtension = extension;
+      if (await picker.show() === picker.returnCancel) return false;
+      await IOUtils.write(picker.file, bytes); return true;
+    },
     openURL(url: string) {
       try {
         const parsed = new URL(url);

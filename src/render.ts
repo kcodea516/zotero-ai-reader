@@ -1,3 +1,4 @@
+import { isSVG, mountSVG, type MediaActions } from './media.ts';
 import MarkdownIt from 'markdown-it';
 import createDOMPurify from 'dompurify';
 import katex from 'katex';
@@ -71,10 +72,35 @@ md.block.ruler.before('fence', 'reader_math_block', (state, start, end, silent) 
 });
 md.renderer.rules.reader_math_block = (tokens, index) => `${math(tokens[index].content, true)}\n`;
 
+const fence = md.renderer.rules.fence!;
+md.renderer.rules.fence = (tokens, index, options, env, renderer) => {
+  const token = tokens[index];
+  if (env?.graphics && isSVG(token.content)) {
+    const id = env.graphics.push(token.content) - 1;
+    return `<div class="zar-svg-placeholder">${id}</div>`;
+  }
+  return fence(tokens, index, options, env, renderer);
+};
+md.block.ruler.before('fence', 'reader_svg', (state, start, end, silent) => {
+  const first = state.src.slice(state.bMarks[start] + state.tShift[start], state.eMarks[start]);
+  if (!/^\s*<svg\b/.test(first)) return false;
+  const lines: string[] = []; let length = 0;
+  for (let line = start; line < end; line++) {
+    const text = state.src.slice(state.bMarks[line] + state.tShift[line], state.eMarks[line]); lines.push(text); length += text.length + 1;
+    if (length > 300000) return false;
+    if (/<\/svg>\s*$/.test(text)) {
+      if (silent) return true;
+      const token = state.push('fence', 'code', 0); token.content = lines.join('\n'); token.info = 'svg'; token.block = true;
+      state.line = line + 1; return true;
+    }
+  }
+  return false;
+});
+
 const purifiers = new WeakMap<object, ReturnType<typeof createDOMPurify>>();
 
 /** Markdown and local KaTeX only. Every generated node is sanitized before insertion. */
-export function renderMarkdown(target: HTMLElement, content: string, openURL: (url: string) => void, sources: PaperSource[] = [], openSource?: (source: PaperSource, page?: number) => void, language: UILanguage = 'zh-CN'): void {
+export function renderMarkdown(target: HTMLElement, content: string, openURL: (url: string) => void, sources: PaperSource[] = [], openSource?: (source: PaperSource, page?: number) => void, language: UILanguage = 'zh-CN', mediaActions?: MediaActions): void {
   const win = target.ownerDocument.defaultView!;
   let purifier = purifiers.get(win);
   if (!purifier) {
@@ -85,7 +111,8 @@ export function renderMarkdown(target: HTMLElement, content: string, openURL: (u
     const source = sources.find(entry => entry.id === id.toUpperCase() && entry.pages.includes(Number(page)));
     return source && openSource ? `[${source.id} · PDF ${page}](https://ai-reader.invalid/source/${source.id}/${page})` : original;
   });
-  const fragment = purifier.sanitize(md.render(cited, { language }), {
+  const graphics: string[] = [];
+  const fragment = purifier.sanitize(md.render(cited, { language, graphics }), {
     RETURN_DOM_FRAGMENT: true,
     USE_PROFILES: { html: true, mathMl: true, svg: true },
     FORBID_TAGS: ['img', 'iframe', 'video', 'audio', 'object', 'embed', 'style', 'script', 'form', 'input', 'button'],
@@ -110,6 +137,10 @@ export function renderMarkdown(target: HTMLElement, content: string, openURL: (u
       anchor.setAttribute('rel', 'noopener noreferrer');
       anchor.addEventListener('click', event => { event.preventDefault(); openURL(url); });
     }
+  }
+  for (const placeholder of Array.from(fragment.querySelectorAll('.zar-svg-placeholder'))) {
+    const index = Number(placeholder.textContent);
+    if (Number.isInteger(index) && graphics[index]) placeholder.replaceWith(mountSVG(target.ownerDocument, graphics[index], language, mediaActions));
   }
   target.replaceChildren(fragment);
 }

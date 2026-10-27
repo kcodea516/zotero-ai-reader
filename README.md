@@ -101,9 +101,17 @@ Short PDFs can be supplied in full; longer ones use selected pages and nearby pa
 
 Press **Enter** to send and **Shift+Enter** for a newline. Select PDF text and choose **Ask AI** to add an editable quotation without sending it. Use the copy icon below a message, or copy a full conversation as Markdown from **History**. Completed turns are sent with follow-up questions; switching providers sends that conversation to the newly selected endpoint. Failed and stopped turns are excluded from subsequent context.
 
+## SVG diagrams in chat (preview)
+
+Ask your model to return a complete SVG in an `svg` code block. The preview displays it as a diagram inside the conversation. Buttons below the image copy it as a PNG, save a PNG or SVG, or copy the sanitized SVG source. The original model output remains available under **View SVG code** and in message copying/history.
+
+SVG previews use local rendering. Scripts, embedded HTML, animation, external images, and remote resource references are removed. Basic shapes, text, gradients, markers, inline styling, and simple CSS rules are supported. Incomplete streaming output remains code until the SVG is complete. Remote Markdown image links are still not loaded automatically.
+
+This feature renders SVG produced by your chat model. It does not add an image-generation API to a text-only endpoint.
+
 ## Release channels
 
-| | Stable: 1.3.2 | Preview: 1.4.0-beta.3 |
+| | Stable: 1.3.2 | Preview: 1.4.0-beta.4 |
 | --- | --- | --- |
 | Paper Q&A, citations, on-demand library lookup, history | Available | Available |
 | Fold long user messages with Show more / Show less | Not included | Available |

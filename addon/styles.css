@@ -203,3 +203,9 @@
 .zar-root .zar-message-expand { appearance: none; display: block; width: auto; min-width: 0; max-width: 100%; height: auto; min-height: 28px; max-height: none; padding: 3px 0; margin: 5px 0 0; border: 0; border-radius: 3px; background: transparent; color: inherit; font: inherit; font-size: .88em; line-height: 1.5; text-align: start; white-space: normal; cursor: pointer; }
 .zar-root .zar-message-expand:hover { text-decoration: underline; }
 .zar-root .zar-message-expand:focus-visible { outline: 2px solid var(--color-accent, Highlight); outline-offset: 2px; }
+
+.zar-root .zar-media { margin: 10px 0; min-width: 0; max-width: 100%; }
+.zar-root .zar-media-image { display: block; width: 100%; height: auto; background: white; border: 1px solid var(--zar-border); border-radius: 6px; }
+.zar-root .zar-media-actions { display: flex; flex-wrap: wrap; gap: 5px; margin-block: 7px; }
+.zar-root .zar-media-status { font-size: .85em; align-self: center; }
+.zar-root .zar-media-source summary { cursor: pointer; font-size: .9em; }

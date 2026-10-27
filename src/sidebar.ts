@@ -446,7 +446,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       entry.quote.textContent = message.quote ? `${message.quote.pageLabel ? `${t(`第 ${message.quote.pageLabel} 页`, `Page ${message.quote.pageLabel}`)}\n` : ''}${message.quote.text}` : '';
       entry.context.textContent = message.contextNotice ? localizeError(message.contextNotice, language) : '';
       entry.context.hidden = !message.contextNotice;
-      renderMarkdown(entry.content, message.content || (message.status === 'streaming' && !message.contextNotice ? t('正在生成…', 'Generating…') : ''), host.openURL, message.sources, host.openSource, language);
+      renderMarkdown(entry.content, message.content || (message.status === 'streaming' && !message.contextNotice ? t('正在生成…', 'Generating…') : ''), host.openURL, message.sources, host.openSource, language, host);
       entry.sources.hidden = !message.sources?.length;
       entry.sources.replaceChildren();
       if (message.sources?.length) {
