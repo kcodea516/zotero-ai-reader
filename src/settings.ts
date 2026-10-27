@@ -145,7 +145,9 @@ export function mountSettings(container: HTMLElement, host: Host): () => void {
       config.models = config.models.filter(value => value.endpointId !== endpoint.id);
       keyDrafts.delete(endpoint.id); clearKeys.delete(endpoint.id); openEndpoints.delete(endpoint.id); dirty = true; render();
     }));
-    body.append(name.field, url.field, key.field, keyNote, clear, streamLabel, models, actions);
+    const imageModel = textInput(t('生图模型 ID（沿用此接口和密钥）', 'Image model ID (uses this endpoint and key)'), endpoint.imageModel || '', value => { endpoint.imageModel = value; }, 'gpt-image-2.5-flare');
+    imageModel.input.className = 'zar-image-model-input';
+    body.append(name.field, url.field, key.field, keyNote, clear, streamLabel, models, imageModel.field, actions);
     details.append(summary, body);
     return details;
   }

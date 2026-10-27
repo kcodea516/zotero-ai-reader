@@ -101,21 +101,26 @@ Short PDFs can be supplied in full; longer ones use selected pages and nearby pa
 
 Press **Enter** to send and **Shift+Enter** for a newline. Select PDF text and choose **Ask AI** to add an editable quotation without sending it. Use the copy icon below a message, or copy a full conversation as Markdown from **History**. Completed turns are sent with follow-up questions; switching providers sends that conversation to the newly selected endpoint. Failed and stopped turns are excluded from subsequent context.
 
-## SVG diagrams in chat (preview)
+## Generate and view images (preview)
 
-Ask your model to return a complete SVG in an `svg` code block. The preview displays it as a diagram inside the conversation. Buttons below the image copy it as a PNG, save a PNG or SVG, or copy the sanitized SVG source. The original model output remains available under **View SVG code** and in message copying/history.
+Ask directly in chat, for example: "Generate a PNG diagram of this pipeline" or "帮我生成一张 JPG 示意图". The plugin sends explicit image requests to the selected endpoint's Images API using its saved key. In Settings, each endpoint has an **Image model ID** field; a blank field uses `gpt-image-2.5-flare`. Set the model ID supported by your provider. The endpoint must implement `/images/generations` under its configured API prefix. An unsupported endpoint, unavailable model, or missing permission produces an error instead of a fabricated image.
 
-SVG previews use local rendering. Scripts, embedded HTML, animation, external images, and remote resource references are removed. Basic shapes, text, gradients, markers, inline styling, and simple CSS rules are supported. Incomplete streaming output remains code until the SVG is complete. Remote Markdown image links are still not loaded automatically.
+Generated PNG, JPEG, and WebP images appear in the conversation and remain in local history. Click an image to open the window-sized viewer. Use its zoom buttons, fit-to-window control, or 100% view; press Escape to close it. The copy icon sits at the image's upper-right corner. The adjacent menu saves PNG, JPG, or the original image. Copying an image uses PNG for clipboard compatibility.
 
-This feature renders SVG produced by your chat model. It does not add an image-generation API to a text-only endpoint.
+For a vector diagram, ask for a complete SVG. It uses the same viewer and upper-right toolbar, with extra menu options to save SVG, copy SVG source, or show the original code. Static shapes, text, gradients, markers, and simple styles are supported. Scripts, embedded HTML, animation, and external resources are removed. Incomplete SVG remains code until complete.
+
+Current-paper excerpts and selected quotations can be included in a generated diagram's prompt when paper reading is enabled. Generated image bytes stay in the local conversation store. Subsequent text questions do not send those bytes back to the chat model. This version supports text-to-image generation; it does not edit an existing image or provide image-aware follow-up analysis. API compatibility, account access, and model charges are determined by your provider. See the [official Images API](https://developers.openai.com/api/reference/resources/images/methods/generate).
+
+Compatible chat responses can also supply inline base64 PNG/JPEG/WebP images. Ordinary remote Markdown image links remain blocked from automatic loading. When the Images API returns an HTTPS image URL, the plugin downloads it without forwarding your API key or cookies.
 
 ## Release channels
 
-| | Stable: 1.3.2 | Preview: 1.4.0-beta.4 |
+| | Stable: 1.3.2 | Preview: 1.4.0-beta.5 |
 | --- | --- | --- |
 | Paper Q&A, citations, on-demand library lookup, history | Available | Available |
 | Fold long user messages with Show more / Show less | Not included | Available |
 | Review and save AI-proposed PDF annotations | Not included | Experimental |
+| Images API generation, raster previews, and image zoom | Not included | Available |
 | Get it | [Release XPI](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.2) | [Source branch](https://github.com/kcodea516/zotero-ai-reader/tree/codex/annotation-agent-preview) |
 
 The preview is available from source; the stable XPI does not contain its extra features. Follow the [build instructions](#build-from-source), switching to `codex/annotation-agent-preview` before installing dependencies.

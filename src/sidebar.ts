@@ -1,3 +1,4 @@
+import { mountRaster } from './media.ts';
 import { mountMessageDisclosure } from './message-disclosure.ts';
 import { annotationMarkdown } from './annotations.ts';
 import type { Conversation, Host, Message, PaperScope, Quote } from './types.ts';
@@ -425,7 +426,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       } else messageRoot.append(header, quote, context, content, sources, annotation, error, actions);
       entry = { disclosure, annotation, root: messageRoot, content, signature: '', contentText: undefined, quoteRef: undefined, headerSignature: '', header, quote, error, copy, feedback, context, sources }; rendered.set(message.id, entry);
     }
-    const signature = JSON.stringify([language, message.status, message.error, message.modelName, message.endpointName, message.contextNotice, message.sources, message.annotationPlan, annotationActions.has(message.id), host.service.isBusy(current()?.id || '')]);
+    const signature = JSON.stringify([language, message.status, message.error, message.modelName, message.endpointName, message.contextNotice, message.sources, message.images?.map(image=>image.id), message.annotationPlan, annotationActions.has(message.id), host.service.isBusy(current()?.id || '')]);
     if (entry.contentText !== message.content || entry.quoteRef !== message.quote || entry.signature !== signature) {
       entry.signature = signature; entry.contentText = message.content; entry.quoteRef = message.quote;
       const headerSignature = JSON.stringify([language, message.role, message.createdAt, message.modelName, message.endpointName]);
@@ -447,6 +448,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       entry.context.textContent = message.contextNotice ? localizeError(message.contextNotice, language) : '';
       entry.context.hidden = !message.contextNotice;
       renderMarkdown(entry.content, message.content || (message.status === 'streaming' && !message.contextNotice ? t('正在生成…', 'Generating…') : ''), host.openURL, message.sources, host.openSource, language, host);
+      for (const image of message.images || []) entry.content.append(mountRaster(doc,image.dataURL,language,host));
       entry.sources.hidden = !message.sources?.length;
       entry.sources.replaceChildren();
       if (message.sources?.length) {

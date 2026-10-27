@@ -205,7 +205,21 @@
 .zar-root .zar-message-expand:focus-visible { outline: 2px solid var(--color-accent, Highlight); outline-offset: 2px; }
 
 .zar-root .zar-media { margin: 10px 0; min-width: 0; max-width: 100%; }
-.zar-root .zar-media-image { display: block; width: 100%; height: auto; background: white; border: 1px solid var(--zar-border); border-radius: 6px; }
-.zar-root .zar-media-actions { display: flex; flex-wrap: wrap; gap: 5px; margin-block: 7px; }
-.zar-root .zar-media-status { font-size: .85em; align-self: center; }
-.zar-root .zar-media-source summary { cursor: pointer; font-size: .9em; }
+.zar-root .zar-media-stage { position: relative; }
+.zar-root .zar-media-image { display: block; width: 100%; height: auto; background: white; border: 1px solid var(--zar-border); border-radius: 9px; cursor: zoom-in; }
+.zar-root .zar-image-tools { position:absolute;top:8px;right:8px;display:flex;gap:4px;border:1px solid var(--zar-border);border-radius:8px;background:var(--material-background,Canvas);box-shadow:0 2px 8px #0002;padding:3px; }
+.zar-root .zar-image-button,.zar-root .zar-image-menu summary { display:flex;align-items:center;justify-content:center;width:30px;height:30px;min-height:0;padding:5px;margin:0;border:0;border-radius:5px;background:transparent;color:inherit;cursor:pointer;list-style:none; }
+.zar-root .zar-image-button:hover,.zar-root .zar-image-menu summary:hover { background:color-mix(in srgb,currentColor 10%,transparent); }
+.zar-root .zar-image-button svg { width:20px;height:20px;pointer-events:none; }
+.zar-root .zar-image-menu summary { font-size:21px;font-weight:600; }
+.zar-root .zar-image-menu { position:relative; }
+.zar-root .zar-image-options { position:absolute;right:0;top:34px;min-width:145px;z-index:20;padding:5px;background:var(--material-background,Canvas);border:1px solid var(--zar-border);border-radius:8px;box-shadow:0 3px 12px #0003; }
+.zar-root .zar-image-option { display:block;width:100%;padding:7px 10px;border:0;background:transparent;color:inherit;text-align:start;font:inherit;cursor:pointer;white-space:nowrap; }
+.zar-root .zar-image-option:hover { background:color-mix(in srgb,currentColor 10%,transparent);border-radius:4px; }
+.zar-root .zar-image-status { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%); }
+.zar-root .zar-image-status.zar-image-error { width:auto;height:auto;clip-path:none;left:8px;bottom:8px;background:Canvas;color:CanvasText;padding:5px;border-radius:4px; }
+.zar-root.zar-image-viewer { position:fixed;inset:0;width:100vw;height:100vh;max-width:none;z-index:2147483647;background:#101116ed;color:#fff;display:flex;flex-direction:column;gap:10px;padding:12px; }
+.zar-image-viewer .zar-viewer-toolbar { display:flex;justify-content:center;align-items:center;gap:12px;flex:0 0 auto; }
+.zar-image-viewer .zar-viewer-viewport { overflow:auto;min-height:0;flex:1;padding:10px; }
+.zar-image-viewer .zar-viewer-viewport img { display:block;max-width:none;margin:auto;background:white; }
+.zar-image-viewer .zar-viewer-percent { min-width:4em;text-align:center; }

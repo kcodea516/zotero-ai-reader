@@ -289,14 +289,14 @@ export async function startup({ id = ADDON_ID, version = '', rootURI }: { id?: s
       Components.classes['@mozilla.org/widget/clipboard;1'].getService(Components.interfaces.nsIClipboard).setData(transfer, null, Components.interfaces.nsIClipboard.kGlobalClipboard);
     },
     async saveImage(dataURL: string, filename: string) {
-      if (!/^ai-reader-diagram\.(?:svg|png)$/.test(filename) || dataURL.length > 20_000_000) throw new Error('Invalid image');
+      if (!/^ai-reader-diagram\.(?:svg|png|jpg|webp)$/.test(filename) || dataURL.length > 20_000_000) throw new Error('Invalid image');
       let bytes: Uint8Array;
       if (filename.endsWith('.svg') && dataURL.startsWith('data:image/svg+xml;charset=utf-8,')) bytes = new TextEncoder().encode(decodeURIComponent(dataURL.slice(dataURL.indexOf(',') + 1)));
-      else if (filename.endsWith('.png') && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(dataURL)) bytes = Uint8Array.from(atob(dataURL.split(',')[1]), char => char.charCodeAt(0));
+      else if (/\.(?:png|jpg|webp)$/.test(filename) && /^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(dataURL)) bytes = Uint8Array.from(atob(dataURL.split(',')[1]), char => char.charCodeAt(0));
       else throw new Error('Invalid image');
       const { FilePicker } = ChromeUtils.importESModule('chrome://zotero/content/modules/filePicker.mjs');
       const picker = new FilePicker(); picker.init(Zotero.getMainWindow(), tr(getLanguage(service!.getConfig()), '保存图片', 'Save image'), picker.modeSave);
-      const extension = filename.endsWith('.svg') ? 'svg' : 'png';
+      const extension = filename.split('.').pop()!;
       picker.appendFilter(extension.toUpperCase(), '*.' + extension); picker.defaultString = filename; picker.defaultExtension = extension;
       if (await picker.show() === picker.returnCancel) return false;
       await IOUtils.write(picker.file, bytes); return true;

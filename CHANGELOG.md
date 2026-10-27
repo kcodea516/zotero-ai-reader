@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0-beta.5 (preview)
+
+- Generate images from explicit chat instructions using the selected endpoint and saved key, with a configurable image model ID.
+- Display PNG, JPEG, and WebP results and retain them in local history.
+- Open SVG and raster images in a window-sized zoom viewer.
+- Move copying to an upper-right icon and place saving/source actions in a compact menu.
+- Handle compatible chat image content parts, stop/retry, bounded image responses, and credential-free image URL downloads.
+
 ## 1.4.0-beta.4 (preview)
 
 - Preview complete SVG diagrams directly in chat and keep the original code in a disclosure.

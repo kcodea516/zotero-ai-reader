@@ -1,5 +1,11 @@
 # 验证记录
 
+## Image generation and viewer: 1.4.0-beta.5
+
+On 2026-10-27, TypeScript checks and all 122 automated tests passed. The suite covers explicit image-intent routing, provider/key reuse, Images API payloads, inline chat image parts, PNG/JPEG/WebP signatures, bounded responses, URL downloads without bearer credentials, blocked private destinations, safe errors, persistence, cancellation, retry, and ordinary follow-up questions without image bytes in model context. API tests use mocked fetch responses.
+
+The final XPI was installed in Zotero on macOS. Two native suites passed 41 checks: 20 SVG checks and 21 image-chat checks. The latter generated PNG and JPG using a fake provider, displayed both in the sidebar, checked the upper-right icon toolbar, opened the image viewer, zoomed in, switched to 100%, closed with Escape, restored focus, copied a PNG payload, exported a JPG payload, and verified the endpoint image-model field. The fixture used memory-only storage and fake clipboard/save sinks. It did not spend API credits, replace the actual system clipboard, or write through the system save dialog. Real-provider model access and API compatibility were not tested.
+
 ## SVG previews: 1.4.0-beta.4
 
 On 2026-10-27, TypeScript checks and all 113 automated tests passed. The final XPI was installed in Zotero on macOS. The native graphics fixture passed 20 checks for image decoding, narrow-sidebar sizing, surrounding Markdown, Chinese text, PNG conversion, copy/save payloads, original-code disclosure, standalone SVG, incomplete output, SVG without an explicit namespace, safe CSS, and rejection of active or external content.
