@@ -137,3 +137,11 @@ test('read errors redact native exception messages', async () => {
     await assert.rejects(chatCompletion(value), error => error instanceof Error && !error.message.includes('sk-private') && error.message.includes('连接中断'));
   });
 });
+
+
+test('compatible chat responses can deliver PNG content parts without exposing them as text', async () => {
+ const dataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1kAAAAASUVORK5CYII=';
+ const images:string[]=[];const {value,text}=request({onImage:image=>{images.push(image.dataURL);}});
+ await withFetch(async()=>Response.json({choices:[{message:{content:[{type:'text',text:'Generated.'},{type:'image_url',image_url:{url:dataURL}}]},finish_reason:'stop'}]}),async()=>{await chatCompletion(value);});
+ assert.deepEqual(images,[dataURL]);assert.deepEqual(text,['Generated.']);
+});

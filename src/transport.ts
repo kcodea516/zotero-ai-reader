@@ -1,3 +1,4 @@
+import { isRasterDataURL, checkInputImages } from './image-data.ts';
 import { bilingualError } from './i18n-errors.ts';
 import type { ChatRequest } from './types.ts';
 
@@ -28,18 +29,33 @@ function statusError(status: number): Error {
   return bilingualError(`API 请求失败（${status}），请检查接口配置、模型及上下文长度。`, `The API request failed (${status}). Check the endpoint settings, model, and context length.`);
 }
 
-function completion(value: any, onText: (text: string) => void): { truncated?: boolean } {
-  if (value?.error) throw bilingualError('API 返回错误，请检查模型、额度及上下文长度。', "The API returned an error. Check the model, quota, and context length.");
-  const choice = value?.choices?.[0];
-  if (!choice || typeof choice.message?.content !== 'string') throw bilingualError('API 返回格式不受支持，需要 Chat Completions 格式。', "The API response format is unsupported. Chat Completions format is required.");
-  if (choice.finish_reason === 'content_filter') throw bilingualError('API 未完成回答：内容被服务端过滤。', "The API did not complete the answer because the server filtered its content.");
-  onText(choice.message.content);
-  return choice.finish_reason === 'length' ? { truncated: true } : {};
+function emitContent(value: unknown, request: Pick<ChatRequest, 'onText' | 'onImage'>): boolean {
+  if (typeof value === 'string') { request.onText(value); return true; }
+  if (!Array.isArray(value)) return false;
+  for (const part of value) {
+    if (part && typeof part.text === 'string') request.onText(part.text);
+    const uri = part?.image_url?.url || part?.url;
+    if (isRasterDataURL(uri)) request.onImage?.({ id: globalThis.crypto.randomUUID(), dataURL: uri });
+  }
+  return true;
+}
+function completion(value: any, request: Pick<ChatRequest, 'onText' | 'onImage'>): { truncated?: boolean } {
+  if (value?.error) throw bilingualError('API 返回错误，请检查模型、额度及上下文长度。', 'The API returned an error. Check the model, quota, and context length.');
+  const choice=value?.choices?.[0];
+  if (!choice || (typeof choice.message?.content !== 'string' && !Array.isArray(choice.message?.content) && !Array.isArray(choice.message?.images))) throw bilingualError('API 返回格式不受支持，需要 Chat Completions 格式。', 'The API response format is unsupported. Chat Completions format is required.');
+  if (choice.finish_reason==='content_filter') throw bilingualError('API 未完成回答：内容被服务端过滤。','The API did not complete the answer because the server filtered its content.');
+  emitContent(choice.message.content,request); emitContent(choice.message.images,request);
+  return choice.finish_reason==='length'?{truncated:true}:{};
 }
 
 /** A single request: no retries, cookies, SDK, or access to Zotero UI state. */
 export async function chatCompletion(request: ChatRequest): Promise<{ truncated?: boolean }> {
   const url = normalizeEndpoint(request.endpoint.baseURL);
+  const messages = request.messages.map(message => {
+    if(!message.images?.length) return {role:message.role,content:message.content};
+    checkInputImages(message.images);
+    return {role:message.role,content:[{type:'text',text:message.content||'Describe the attached images.'},...message.images.map(image=>({type:'image_url',image_url:{url:image.dataURL}}))]};
+  });
   const controller = new AbortController();
   let timedOut = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -59,7 +75,7 @@ export async function chatCompletion(request: ChatRequest): Promise<{ truncated?
     try {
       response = await fetch(url, {
         method: 'POST', headers,
-        body: JSON.stringify({ model: request.model.model, messages: request.messages, stream: request.endpoint.stream }),
+        body: JSON.stringify({ model: request.model.model, messages, stream: request.endpoint.stream }),
         signal: controller.signal, credentials: 'omit', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer',
       });
     } catch {
@@ -77,7 +93,7 @@ export async function chatCompletion(request: ChatRequest): Promise<{ truncated?
         throw bilingualError('API 返回了无效的 JSON。', "The API returned invalid JSON.");
       }
       if (controller.signal.aborted) throw bilingualError(timedOut ? 'API 响应超时，请手动重试。' : '已停止生成。', timedOut ? 'The API response timed out. Retry manually.' : 'Generation stopped.');
-      return completion(json, request.onText);
+      return completion(json, request);
     }
     if (!response.body) throw bilingualError('API 没有返回可读取的响应。', "The API returned no readable response.");
     reader = response.body.getReader();
@@ -98,7 +114,7 @@ export async function chatCompletion(request: ChatRequest): Promise<{ truncated?
       if (value?.error) throw bilingualError('API 在生成过程中返回错误，请检查额度、模型及上下文长度。', "The API returned an error during generation. Check the quota, model, and context length.");
       const choice = value?.choices?.find((item: any) => item.index === 0) ?? value?.choices?.[0];
       if (!choice) return; // Usage-only event
-      if (typeof choice.delta?.content === 'string') request.onText(choice.delta.content);
+      emitContent(choice.delta?.content, request); emitContent(choice.delta?.images, request);
       if (choice.finish_reason === 'content_filter') throw bilingualError('API 未完成回答：内容被服务端过滤。', "The API did not complete the answer because the server filtered its content.");
       if (choice.finish_reason != null) { finished = true; done = true; truncated ||= choice.finish_reason === 'length'; }
     };

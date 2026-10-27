@@ -1,3 +1,4 @@
+import { imageDataURL, MAX_IMAGE_BYTES, checkInputImages } from './image-data.ts';
 import { createZoteroAnnotationTools } from './zotero-annotations.ts';
 import { ChatService } from './core';
 import { ZoteroRepository, ZoteroSecretStore } from './platform';
@@ -280,6 +281,16 @@ export async function startup({ id = ADDON_ID, version = '', rootURI }: { id?: s
       Components.classes['@mozilla.org/widget/clipboardhelper;1']
         .getService(Components.interfaces.nsIClipboardHelper).copyString(text);
     },
+    async pickImages(win?: Window) {
+      const {FilePicker}=ChromeUtils.importESModule('chrome://zotero/content/modules/filePicker.mjs');const picker=new FilePicker();
+      picker.init(win||Zotero.getMainWindow(),tr(getLanguage(service!.getConfig()),'添加图片','Attach images'),picker.modeOpenMultiple);picker.appendFilter('PNG, JPG, WebP','*.png; *.jpg; *.jpeg; *.webp');
+      if(await picker.show()===picker.returnCancel)return [];
+      const paths=picker.files;if(paths.length>4)throw new Error(tr(getLanguage(service!.getConfig()),'最多添加 4 张图片。','Attach up to 4 images.'));
+      const images=[];
+      for(const path of paths){if((await IOUtils.stat(path)).size>MAX_IMAGE_BYTES)throw new Error(tr(getLanguage(service!.getConfig()),'单张图片不能超过 12 MB。','Each image must be 12 MB or smaller.'));
+        const bytes=await IOUtils.read(path);images.push({id:globalThis.crypto.randomUUID(),name:PathUtils.filename(path).slice(0,256),dataURL:imageDataURL(bytes)});}
+      checkInputImages(images);return images;
+    },
     async copyImage(png: string) {
       if (!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(png) || png.length > 20_000_000) throw new Error('Invalid PNG');
       const bytes = Uint8Array.from(atob(png.split(',')[1]), char => char.charCodeAt(0));
@@ -289,14 +300,14 @@ export async function startup({ id = ADDON_ID, version = '', rootURI }: { id?: s
       Components.classes['@mozilla.org/widget/clipboard;1'].getService(Components.interfaces.nsIClipboard).setData(transfer, null, Components.interfaces.nsIClipboard.kGlobalClipboard);
     },
     async saveImage(dataURL: string, filename: string) {
-      if (!/^ai-reader-diagram\.(?:svg|png)$/.test(filename) || dataURL.length > 20_000_000) throw new Error('Invalid image');
+      if (!/^ai-reader-diagram\.(?:svg|png|jpg|webp)$/.test(filename) || dataURL.length > 20_000_000) throw new Error('Invalid image');
       let bytes: Uint8Array;
       if (filename.endsWith('.svg') && dataURL.startsWith('data:image/svg+xml;charset=utf-8,')) bytes = new TextEncoder().encode(decodeURIComponent(dataURL.slice(dataURL.indexOf(',') + 1)));
-      else if (filename.endsWith('.png') && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(dataURL)) bytes = Uint8Array.from(atob(dataURL.split(',')[1]), char => char.charCodeAt(0));
+      else if (/\.(?:png|jpg|webp)$/.test(filename) && /^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(dataURL)) bytes = Uint8Array.from(atob(dataURL.split(',')[1]), char => char.charCodeAt(0));
       else throw new Error('Invalid image');
       const { FilePicker } = ChromeUtils.importESModule('chrome://zotero/content/modules/filePicker.mjs');
       const picker = new FilePicker(); picker.init(Zotero.getMainWindow(), tr(getLanguage(service!.getConfig()), '保存图片', 'Save image'), picker.modeSave);
-      const extension = filename.endsWith('.svg') ? 'svg' : 'png';
+      const extension = filename.split('.').pop()!;
       picker.appendFilter(extension.toUpperCase(), '*.' + extension); picker.defaultString = filename; picker.defaultExtension = extension;
       if (await picker.show() === picker.returnCancel) return false;
       await IOUtils.write(picker.file, bytes); return true;

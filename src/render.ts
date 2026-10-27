@@ -1,4 +1,5 @@
-import { isSVG, mountSVG, type MediaActions } from './media.ts';
+import { isRasterDataURL } from './image-data.ts';
+import { isSVG, mountSVG, mountRaster, type MediaActions } from './media.ts';
 import MarkdownIt from 'markdown-it';
 import createDOMPurify from 'dompurify';
 import katex from 'katex';
@@ -17,6 +18,8 @@ const md = new MarkdownIt({ html: false, breaks: true, linkify: false, typograph
 // Images never initiate a network request while a response is being rendered.
 md.renderer.rules.image = (tokens, index, _options, env) => {
   const language: UILanguage = env?.language === 'en-US' ? 'en-US' : 'zh-CN';
+  const uri = tokens[index].attrGet('src');
+  if (env?.rasters && isRasterDataURL(uri)) { const id = env.rasters.push(uri) - 1; return `<span class="zar-raster-placeholder">${id}</span>`; }
   return md.utils.escapeHtml(tr(language, `[图片：${tokens[index].content || '未加载'}]`, `[Image: ${tokens[index].content || 'not loaded'}]`));
 };
 md.inline.ruler.before('escape', 'reader_math', (state, silent) => {
@@ -111,8 +114,8 @@ export function renderMarkdown(target: HTMLElement, content: string, openURL: (u
     const source = sources.find(entry => entry.id === id.toUpperCase() && entry.pages.includes(Number(page)));
     return source && openSource ? `[${source.id} · PDF ${page}](https://ai-reader.invalid/source/${source.id}/${page})` : original;
   });
-  const graphics: string[] = [];
-  const fragment = purifier.sanitize(md.render(cited, { language, graphics }), {
+  const graphics: string[] = [], rasters: string[] = [];
+  const fragment = purifier.sanitize(md.render(cited, { language, graphics, rasters }), {
     RETURN_DOM_FRAGMENT: true,
     USE_PROFILES: { html: true, mathMl: true, svg: true },
     FORBID_TAGS: ['img', 'iframe', 'video', 'audio', 'object', 'embed', 'style', 'script', 'form', 'input', 'button'],
@@ -142,5 +145,6 @@ export function renderMarkdown(target: HTMLElement, content: string, openURL: (u
     const index = Number(placeholder.textContent);
     if (Number.isInteger(index) && graphics[index]) placeholder.replaceWith(mountSVG(target.ownerDocument, graphics[index], language, mediaActions));
   }
+  for (const placeholder of Array.from(fragment.querySelectorAll('.zar-raster-placeholder'))) { const index=Number(placeholder.textContent);if(Number.isInteger(index)&&rasters[index])placeholder.replaceWith(mountRaster(target.ownerDocument,rasters[index],language,mediaActions)); }
   target.replaceChildren(fragment);
 }

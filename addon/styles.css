@@ -205,7 +205,37 @@
 .zar-root .zar-message-expand:focus-visible { outline: 2px solid var(--color-accent, Highlight); outline-offset: 2px; }
 
 .zar-root .zar-media { margin: 10px 0; min-width: 0; max-width: 100%; }
-.zar-root .zar-media-image { display: block; width: 100%; height: auto; background: white; border: 1px solid var(--zar-border); border-radius: 6px; }
-.zar-root .zar-media-actions { display: flex; flex-wrap: wrap; gap: 5px; margin-block: 7px; }
-.zar-root .zar-media-status { font-size: .85em; align-self: center; }
-.zar-root .zar-media-source summary { cursor: pointer; font-size: .9em; }
+.zar-root .zar-media-stage { position: relative; }
+.zar-root .zar-media-image { display: block; width: 100%; height: auto; background: white; border: 1px solid var(--zar-border); border-radius: 9px; cursor: zoom-in; }
+.zar-root .zar-image-tools { position:absolute;top:6px;right:6px;display:flex;gap:1px;border:1px solid color-mix(in srgb,currentColor 10%,transparent);border-radius:6px;background:color-mix(in srgb,var(--material-background,Canvas) 62%,transparent);box-shadow:0 1px 4px #0001;padding:2px;opacity:.58;transition:opacity .15s,background .15s; }
+.zar-root .zar-image-button,.zar-root .zar-image-menu summary { display:flex;align-items:center;justify-content:center;width:30px;height:30px;min-height:0;padding:5px;margin:0;border:0;border-radius:5px;background:transparent;color:inherit;cursor:pointer;list-style:none; }
+.zar-root .zar-image-button:hover,.zar-root .zar-image-menu summary:hover { background:color-mix(in srgb,currentColor 10%,transparent); }
+.zar-root .zar-image-button svg { width:20px;height:20px;pointer-events:none; }
+.zar-root .zar-image-menu summary { font-size:21px;font-weight:600; }
+.zar-root .zar-image-menu { position:relative; }
+.zar-root .zar-image-options { position:absolute;right:0;top:34px;min-width:145px;z-index:20;padding:5px;background:var(--material-background,Canvas);border:1px solid var(--zar-border);border-radius:8px;box-shadow:0 3px 12px #0003; }
+.zar-root .zar-image-option { display:block;width:100%;padding:7px 10px;border:0;background:transparent;color:inherit;text-align:start;font:inherit;cursor:pointer;white-space:nowrap; }
+.zar-root .zar-image-option:hover { background:color-mix(in srgb,currentColor 10%,transparent);border-radius:4px; }
+.zar-root .zar-image-status { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%); }
+.zar-root .zar-image-status.zar-image-error { width:auto;height:auto;clip-path:none;left:8px;bottom:8px;background:Canvas;color:CanvasText;padding:5px;border-radius:4px; }
+.zar-root.zar-image-viewer { position:fixed;inset:0;width:100vw;height:100vh;max-width:none;z-index:2147483647;background:#101116ed;color:#fff;display:flex;flex-direction:column;gap:10px;padding:12px; }
+.zar-image-viewer .zar-viewer-toolbar { display:flex;justify-content:center;align-items:center;gap:12px;flex:0 0 auto; }
+.zar-image-viewer .zar-viewer-viewport { overflow:auto;min-height:0;flex:1;padding:10px; }
+.zar-image-viewer .zar-viewer-viewport img { display:block;max-width:none;margin:auto;background:white; }
+.zar-image-viewer .zar-viewer-percent { min-width:4em;text-align:center; }
+
+.zar-root .zar-image-tools .zar-image-button,.zar-root .zar-image-tools .zar-image-menu summary { width:24px;height:24px;padding:4px; }
+.zar-root .zar-image-tools .zar-image-button svg { width:16px;height:16px; }
+.zar-root .zar-image-tools .zar-image-menu summary { font-size:17px; }
+.zar-root .zar-image-tools:hover,.zar-root .zar-image-tools:focus-within { opacity:1;background:color-mix(in srgb,var(--material-background,Canvas) 90%,transparent); }
+.zar-root .zar-image-tools .zar-image-options { top:28px; }
+.zar-root .zar-attach-image { flex:0 0 auto;width:28px;height:28px; }
+.zar-root .zar-input-images { display:flex;flex-wrap:wrap;align-items:flex-start;gap:7px;max-width:100%;margin:4px 0 4px; }
+.zar-root .zar-message-user .zar-input-images + p { margin-top:0; }
+.zar-root .zar-input-image { position:relative;flex:0 0 auto;width:72px;height:auto; }
+.zar-root .zar-input-image-open { display:block;padding:0;width:72px;height:auto;min-height:0;max-height:none;margin:0;overflow:hidden;border:1px solid var(--zar-border);border-radius:8px;background:Canvas;cursor:zoom-in; }
+.zar-root .zar-input-image-open img { display:block;width:100%;height:auto;max-height:72px;object-fit:contain; }
+.zar-root .zar-input-image-remove { position:absolute;top:2px;right:2px;display:flex;align-items:center;justify-content:center;width:18px;height:18px;min-height:0;border:0;padding:0;border-radius:50%;background:#15181ac0;color:white;font-size:16px;line-height:1;cursor:pointer; }
+.zar-root .zar-draft-images { display:flow-root;padding:2px 4px 0; }
+.zar-root .zar-draft-images .zar-input-images { align-items:flex-start;margin:0 0 2px; }
+@media (prefers-reduced-motion:reduce) { .zar-root .zar-image-tools { transition:none; } }

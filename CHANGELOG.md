@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.4.0-beta.6 (preview)
+
+- Attach PNG/JPG/WebP images with the native picker, screenshot paste, or file drop.
+- Show removable thumbnails above the composer text and preserve images with sent messages and local drafts.
+- Send vision-compatible image content parts with current and completed user turns.
+- Use the Images Edit API for generation requests with attached reference images.
+- Shrink image-toolbar controls to 24 pixels and make them translucent until hover or focus.
+- Highlight GPT API image generation and multimodal input in the README.
+
+## 1.4.0-beta.5 (preview)
+
+- Generate images from explicit chat instructions using the selected endpoint and saved key, with a configurable image model ID.
+- Display PNG, JPEG, and WebP results and retain them in local history.
+- Open SVG and raster images in a window-sized zoom viewer.
+- Move copying to an upper-right icon and place saving/source actions in a compact menu.
+- Handle compatible chat image content parts, stop/retry, bounded image responses, and credential-free image URL downloads.
+
 ## 1.4.0-beta.4 (preview)
 
 - Preview complete SVG diagrams directly in chat and keep the original code in a disclosure.
