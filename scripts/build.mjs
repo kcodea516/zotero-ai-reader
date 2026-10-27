@@ -1,3 +1,4 @@
+import { pruneBuilds } from './prune-builds.mjs';
 import { build } from 'esbuild';
 import { cp, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -38,4 +39,5 @@ if (!version.includes('-')) await writeFile(resolve(root, 'updates.json'), JSON.
     } },
   }] },
 } }, null, 2) + '\n');
+await pruneBuilds(resolve(root, 'build'), version);
 console.log(`Built build/zotero-ai-reader-${version}.xpi`);
