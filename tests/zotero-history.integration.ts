@@ -63,7 +63,7 @@ export async function runHistoryChecks(win: Window): Promise<string[]> {
     // overlay does not inherit. Mount inside the active real pane to exercise
     // those rules while all conversations remain isolated in memory.
     const selectedDetails = doc.querySelector<HTMLElement>('item-details.deck-selected');
-    const activeDetails = selectedDetails && selectedDetails.getBoundingClientRect().width > 0 ? selectedDetails
+    const activeDetails = selectedDetails && selectedDetails.getBoundingClientRect().width > 0 && win.getComputedStyle(selectedDetails).visibility !== 'hidden' ? selectedDetails
       : Array.from(doc.querySelectorAll<HTMLElement>('item-details')).find(element => {
         const rect = element.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0 && win.getComputedStyle(element).visibility !== 'hidden';

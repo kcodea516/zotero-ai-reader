@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.4.0-beta.4 (preview)
+
+- Preview complete SVG diagrams directly in chat and keep the original code in a disclosure.
+- Add native actions to copy a PNG image, save PNG/SVG files, and copy sanitized SVG source.
+- Restrict previews to static local SVG content and preserve ordinary remote-image blocking.
+
+## 1.4.0-beta.3
+
+- Request PDF highlights and comments directly in chat, without enabling a separate annotation mode.
+- Keep passage review, explicit saving, and batch undo.
+
+
+## 1.4.0-beta.2 (preview)
+
+- Collapse long user messages and quoted passages into a six-line preview with bilingual Show more and Show less controls.
+- Preserve expanded messages during streaming and language changes; keep the full text for copying, export, and model context.
+- Keep short messages and assistant answers fully visible.
+- Verify the installed preview on Zotero 10.0.6 with 224 native UI checks and 11 native annotation checks using a synthetic PDF and fake model responses.
+
+## 1.4.0-beta.1 (preview)
+
+- Add an opt-in annotation mode that reads the current PDF and proposes highlights or underlines with explanatory comments.
+- Verify quoted passages against local PDF coordinates, show a selectable preview, and save only the selected annotations.
+- Add batch undo with edit detection, repeated-save protection, and atomic batch writes.
+- Keep annotation previews in conversation history and include quotations and comments when copying or exporting.
+- Preserve the stable update feed when building a prerelease. Native installation and annotation checks are pending.
+
 ## 1.3.2
 
 - Add a looping activity bar along the bottom of the native Stop button while a response is being generated. The bar indicates activity without estimating completion.

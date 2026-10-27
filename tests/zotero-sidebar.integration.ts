@@ -191,6 +191,25 @@ export async function runSidebarChecks(win: Window): Promise<string[]> {
     type('Fifth question to fail'); send.doCommand();
     await until('fifth response fails', () => requests.length === 5 && !service.isBusy(conversation.id));
     check('failed response also hides the indicator', conversation.messages.at(-1)?.status === 'error' && stopControl.hidden && stopControl.getAnimations({ subtree: true }).length === 0);
+    const longQuestion = Array.from({ length: 22 }, (_, i) => `Paragraph ${i + 1}: explain how image encoding affects an ongoing decode request.`).join('\n\n') + '\n\nUnique final sentence.';
+    type(longQuestion); send.doCommand();
+    await until('long user message completes', () => requests.length === 6 && !service.isBusy(conversation.id));
+    const longUser = Array.from(overlay.querySelectorAll<HTMLElement>('.zar-message-user')).at(-1)!;
+    const disclosure = longUser.querySelector<HTMLButtonElement>('.zar-message-expand')!;
+    const viewport = longUser.querySelector<HTMLElement>('.zar-user-text')!;
+    const fullText = longUser.querySelector<HTMLElement>('.zar-user-text-body')!;
+    check('long user message starts collapsed with an accessible expand action', !disclosure.hidden && disclosure.getAttribute('aria-expanded') === 'false' && disclosure.getAttribute('aria-controls') === fullText.id && viewport.clientHeight < fullText.scrollHeight);
+    check('short user message and assistant response remain unfolded', articles[0].querySelector<HTMLButtonElement>('.zar-message-expand')?.hidden && !overlay.querySelector('.zar-message-assistant .zar-message-expand'));
+    longUser.querySelector<HTMLButtonElement>('.zar-message-copy')!.click();
+    check('collapsed message copy and model context retain the complete question', copies.at(-1) === longQuestion && requests[5].at(-1)?.content === longQuestion && fullText.textContent?.includes('Unique final sentence.'));
+    disclosure.click(); await pause();
+    check('expand reveals all text without replacing the control', disclosure.getAttribute('aria-expanded') === 'true' && !viewport.classList.contains('zar-user-text-collapsed') && longUser.querySelector('.zar-message-expand') === disclosure);
+    type('Preserved draft while reading expanded question'); await pause();
+    check('expanded state survives unrelated composer renders', disclosure.getAttribute('aria-expanded') === 'true' && !viewport.classList.contains('zar-user-text-collapsed'));
+    await service.saveConfig({ ...config, language: 'en-US' }); await pause();
+    check('disclosure translates without collapsing user text', disclosure.textContent?.includes('Show less') && disclosure.getAttribute('aria-expanded') === 'true');
+    disclosure.click(); await pause();
+    check('show less restores the clipped preview and preserves the draft', disclosure.getAttribute('aria-expanded') === 'false' && viewport.classList.contains('zar-user-text-collapsed') && conversation.draft === 'Preserved draft while reading expanded question');
     return checks;
   } finally {
     releaseFirst?.();

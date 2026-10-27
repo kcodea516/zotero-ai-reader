@@ -1,3 +1,5 @@
+import { requestsAnnotation } from './annotation-intent.ts';
+import { annotationMarkdown, isAnnotationPlan, type AnnotationPlanner, type AnnotationReceipt } from './annotations.ts';
 import { bilingualError, ERROR_TRANSLATIONS } from './i18n-errors.ts';
 import { getLanguage, tr, localizeError, type UILanguage } from './i18n.ts';
 import type { ChatTransport, Config, Conversation, Message, PaperScope, PaperContext, PaperContextProvider, PaperSource, ReadingOptions, Quote, Repository, SecretStore, StoreState } from './types.ts';
@@ -87,6 +89,8 @@ function validateState(value: StoreState): void {
     for (const message of conversation.messages) {
       if (!message || typeof message.id !== 'string' || !message.id || messageIDs.has(message.id) || !['user', 'assistant'].includes(message.role) || typeof message.content !== 'string' || !Number.isFinite(message.createdAt) || typeof message.requestId !== 'string' || !message.requestId || !['complete', 'streaming', 'error', 'stopped', 'interrupted'].includes(message.status) || (message.quote && typeof message.quote.text !== 'string')) throw bilingualError('对话历史中的消息数据损坏。', "Message data in the saved history is damaged.");
       messageIDs.add(message.id);
+      if (message.annotationPlan !== undefined && !isAnnotationPlan(message.annotationPlan)) message.annotationPlan = undefined;
+      if (message.intent !== undefined && message.intent !== 'annotate') message.intent = undefined;
       if (message.sources !== undefined) message.sources = Array.isArray(message.sources) ? message.sources.filter(validSource).map(sourceMetadata) : undefined;
       if (message.contextNotice !== undefined && typeof message.contextNotice !== 'string') message.contextNotice = undefined;
     }
@@ -107,6 +111,7 @@ export class ChatService {
   private secrets: SecretStore;
   private transport: ChatTransport;
   private contextProvider?: PaperContextProvider;
+  private annotationPlanner?: AnnotationPlanner;
   private listeners = new Set<() => void>();
   private active = new Map<string, { controller: AbortController; finished: Promise<void> }>();
   private initialized = false;
@@ -117,11 +122,11 @@ export class ChatService {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private saveQueue: Promise<void> = Promise.resolve();
 
-  constructor(repository: Repository, secrets: SecretStore, transport: ChatTransport = chatCompletion, contextProvider?: PaperContextProvider) {
+  constructor(repository: Repository, secrets: SecretStore, transport: ChatTransport = chatCompletion, contextProvider?: PaperContextProvider, annotationPlanner?: AnnotationPlanner) {
     this.repository = repository;
     this.secrets = secrets;
     this.transport = transport;
-    this.contextProvider = contextProvider;
+    this.contextProvider = contextProvider; this.annotationPlanner = annotationPlanner;
   }
 
   async init(): Promise<void> {
@@ -246,7 +251,7 @@ export class ChatService {
 
   isBusy(id: string): boolean { return this.active.has(id); }
 
-  async send(id: string): Promise<void> {
+  async send(id: string, intent?: 'annotate'): Promise<void> {
     this.ensureWritable();
     if (this.isBusy(id)) return;
     const conversation = this.requireConversation(id);
@@ -254,7 +259,7 @@ export class ChatService {
     if (!content && !conversation.quote?.text.trim()) return;
     const now = Date.now();
     const requestId = uuid();
-    const user: Message = { id: uuid(), role: 'user', content, quote: conversation.quote ? clone(conversation.quote) : undefined, createdAt: now, status: 'complete', requestId };
+    const user: Message = { id: uuid(), role: 'user', content, intent: intent ?? (requestsAnnotation(content) ? 'annotate' : undefined), quote: conversation.quote ? clone(conversation.quote) : undefined, createdAt: now, status: 'complete', requestId };
     const assistant: Message = { id: uuid(), role: 'assistant', content: '', createdAt: now, status: 'streaming', requestId };
     conversation.messages.push(user, assistant);
     conversation.draft = '';
@@ -262,6 +267,17 @@ export class ChatService {
     if (['新对话', 'New conversation'].includes(conversation.title)) conversation.title = (content || user.quote?.text || tr(getLanguage(this.state.config), '文献问答', 'Paper discussion')).replace(/\s+/g, ' ').slice(0, 32);
     conversation.updatedAt = now;
     await this.start(conversation, user, assistant);
+  }
+
+  updateAnnotationReceipts(id: string, messageID: string, receipts: AnnotationReceipt[], undone = false): void {
+    this.ensureWritable();
+    const conversation = this.requireConversation(id);
+    const message = conversation.messages.find(value => value.id === messageID);
+    if (!message?.annotationPlan) throw new Error('Missing annotation plan');
+    const plan = clone(message.annotationPlan);
+    plan.receipts = receipts; plan.undone = undone;
+    if (!isAnnotationPlan(plan)) throw new Error('Invalid annotation receipts');
+    message.annotationPlan = plan; conversation.updatedAt = Date.now(); this.changed();
   }
 
   stop(id: string): void { this.active.get(id)?.controller.abort(); }
@@ -279,6 +295,7 @@ export class ChatService {
     assistant.content = '';
     assistant.error = undefined;
     assistant.sources = undefined;
+    assistant.annotationPlan = undefined;
     assistant.contextNotice = undefined;
     assistant.status = 'streaming';
     assistant.createdAt = Date.now();
@@ -322,7 +339,7 @@ export class ChatService {
       const previousUser = conversation.messages[i];
       const previousAssistant = conversation.messages[i + 1];
       if (previousUser.role === 'user' && previousUser.status === 'complete' && previousAssistant?.role === 'assistant' && previousAssistant.status === 'complete' && previousUser.requestId === previousAssistant.requestId) {
-        messages.push({ role: 'user', content: userContent(previousUser) }, { role: 'assistant', content: previousAssistant.content + sourceLegend(previousAssistant.sources) });
+        messages.push({ role: 'user', content: userContent(previousUser) }, { role: 'assistant', content: previousAssistant.content + annotationMarkdown(previousAssistant.annotationPlan) + sourceLegend(previousAssistant.sources) });
         i++;
       }
     }
@@ -337,6 +354,23 @@ export class ChatService {
         try { key = await this.secrets.get(endpointSnapshot.id); }
         catch { throw bilingualError('API 密钥读取失败，请在设置中重新保存密钥。', "The API key could not be read. Save it again in Settings."); }
         if (controller.signal.aborted) throw bilingualError('已停止生成。', "Generation stopped.");
+        if (user.intent === 'annotate') {
+          if (!this.annotationPlanner) throw bilingualError('当前环境不支持标注 Agent。', 'The annotation agent is unavailable in this environment.');
+          if (!readingSnapshot.currentPaper) throw bilingualError('标注需要读取当前 PDF，请先开启“读取原文”。', 'Annotations require reading the current PDF. Enable Read paper first.');
+          const plan = await abortable(this.annotationPlanner({ scope: scopeSnapshot, instruction: questionSnapshot, quote: user.quote, previousQuestions,
+            language, signal: controller.signal, endpoint: endpointSnapshot, model: modelSnapshot, key, transport: this.transport,
+            onNotice: text => { if (!controller.signal.aborted) { assistant.contextNotice = text; this.changed(); } },
+          }), controller.signal);
+          if (controller.signal.aborted) throw bilingualError('已停止生成。', 'Generation stopped.');
+          if (!isAnnotationPlan(plan) || plan.scope.libraryID !== scopeSnapshot.libraryID || plan.scope.itemKey !== scopeSnapshot.itemKey) throw bilingualError('标注方案与当前文献不匹配，请重试。', 'The annotation plan does not match this paper. Retry.');
+          assistant.annotationPlan = clone(plan);
+          const count = plan.items.filter(item => item.status === 'ready').length;
+          assistant.content = tr(language, `已定位 ${count} 处原文。请在下方核对原句和注释，选择后写入 Zotero。`, `${count} passages located. Review the quotations and comments below, then select which to save in Zotero.`);
+          assistant.contextNotice = plan.warning;
+          assistant.sources = plan.items.length ? [{ id: 'S1', title: scopeSnapshot.title, libraryID: scopeSnapshot.libraryID, itemKey: scopeSnapshot.itemKey, attachmentKey: plan.attachmentKey,
+            pages: [...new Set(plan.items.map(item => item.page))], totalPages: plan.totalPages, truncated: true }] : undefined;
+          assistant.status = 'complete'; return;
+        }
         if (this.contextProvider) {
           preparingContext = true;
           let context: PaperContext | undefined;

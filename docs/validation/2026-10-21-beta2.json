@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-21",
+  "zotero": "10.0.6",
+  "plugin": "1.4.0-beta.2",
+  "enabled": true,
+  "checks": {
+    "sidebar-checks.js": 61,
+    "reading-checks.js": 38,
+    "history-checks.js": 36,
+    "settings-checks.js": 48,
+    "language-checks.js": 24,
+    "annotation-checks.js": 17
+  },
+  "nativeAnnotations": 11,
+  "configPreserved": true,
+  "conversationsAndDraftsPreserved": true,
+  "originalTabRestored": true,
+  "remainingTestTabs": 0,
+  "temporaryOverlays": 0
+}

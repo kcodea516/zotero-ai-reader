@@ -1,8 +1,40 @@
 # 验证记录
 
+## SVG previews: 1.4.0-beta.4
+
+On 2026-10-27, TypeScript checks and all 113 automated tests passed. The final XPI was installed in Zotero on macOS. The native graphics fixture passed 20 checks for image decoding, narrow-sidebar sizing, surrounding Markdown, Chinese text, PNG conversion, copy/save payloads, original-code disclosure, standalone SVG, incomplete output, SVG without an explicit namespace, safe CSS, and rejection of active or external content.
+
+The fixture used synthetic diagrams and fake clipboard/file sinks. It did not call a model, change conversation history, write files through the save dialog, or replace the system clipboard. The native clipboard implementation follows Zotero's existing image-copy API; actual cross-application pasting and save-dialog file writes were not separately tested. Remote image URLs and dedicated image-generation APIs remain unsupported.
+
+## Conversational annotations: 1.4.0-beta.3
+
+On 2026-10-24, TypeScript checks and all 112 automated tests passed. New tests cover direct Chinese and English annotation commands, ordinary questions, negated and quoted instructions, follow-up isolation, and disabled paper-reading permission. Routing uses the current user message and does not inspect quoted evidence or previous messages for commands. It is a conservative local command recognizer; ambiguous requests can remain ordinary chat.
+
+The update was installed and enabled in Zotero on macOS. The native annotation fixture passed all 17 checks: no mode toggle, direct chat-to-preview routing, unchanged input node, verified passage selection, narrow-sidebar layout, copy, local passage navigation, explicit save, undo, language switching, and an ordinary follow-up without further writes. The fixture used memory storage and simulated annotation tools; no real provider request or existing library annotation was changed. Exact PDF placement and real-model selection were not retested in this update.
+
 验证日期：2026-10-20 至 2026-10-21。
 
 使用本机 macOS、Zotero 10.0.6 和 Translate for Zotero 2.4.8。1.0.0 的核心功能测试使用独立配置目录和测试文献；1.0.1 的原生控件检查在用户已安装插件的日常配置中进行。
+
+## 1.4.0-beta.2 native verification
+
+On 2026-10-21, version 1.4.0-beta.2 was installed and enabled in Zotero 10.0.6 on macOS. Six native integration suites passed 224 checks: 61 sidebar, 38 paper reading, 36 history, 48 settings, 24 language, and 17 annotation preview checks. TypeScript checks and all 109 automated tests also passed.
+
+Sidebar checks exercised default clipping, expansion and collapse of long user messages, full-text copying and model context, language changes, and preservation of the next draft. Short messages and assistant answers stayed fully visible. The history and settings fixtures initially selected a hidden item-details pane that retained its size. After excluding hidden panes, all checks passed without a runtime plugin change.
+
+A separate synthetic PDF passed 11 native annotation checks using the installed adapter and a fake model response. The adapter located both passages, saved a highlight and an underline with comments, avoided duplicates on repeated save, and navigated to the original passage. Editing a saved comment blocked batch undo and preserved every annotation; restoring that fixture comment allowed undo to trash only the generated batch, leaving a control annotation untouched. Visual inspection confirmed that the highlight and underline covered the intended sentences. The full sequence was repeated for that inspection.
+
+Configuration and all existing conversations, including drafts, matched their pre-update digests. The original PDF tab was restored, and no test tab or overlay remained. Only disposable synthetic records were created; those documents were moved to Zotero Trash after testing. The tests sent no real model requests. Provider-specific annotation proposal quality and arbitrary PDF layouts remain outside this check.
+
+The reusable native fixture is `tests/zotero-native-annotations.integration.js`. Load it in Zotero's Run JavaScript sandbox with `Zotero` available, then call `AIReaderNativeAnnotationChecks.run(win, '/absolute/path/to/tests/fixtures/annotation-fixture.pdf')`. It creates its own document, uses a fake transport, and trashes that document in cleanup. UI fixtures are rebuilt with `npm run build:smoke`. The machine-readable result is in `docs/validation/2026-10-21-beta2.json`.
+
+## 1.4.0-beta.1 annotation prototype
+
+On 2026-10-21, TypeScript checks and all 109 automated tests passed. The XPI and six native integration fixtures compiled successfully. The 15 new tests cover PDF text matching, real-coordinate derivation, ambiguous quotations, malformed plans, selected writes, duplicate saves, rollback, comment escaping, edited-annotation protection, file changes, permissions, cancellation, retry, preview persistence, and empty plans. Tests use synthetic PDFs, fake Zotero items and an in-memory repository; no provider request or actual annotation write was made.
+
+The installed Zotero 10.0.6 source was inspected to check reader page data, annotation fields, transaction behavior, and reader refresh methods. This source review does not confirm runtime behavior. The annotation fixture is prepared but has not been executed; the prototype has not been installed. Native layout, exact highlight placement, comments, and undo remain unverified. The existing Zotero installation and its annotations were not changed.
+
+To run the UI-only annotation fixture later, load `build/annotation-checks.js` in the same sandbox used for the sidebar checks below, then call `AIReaderAnnotationChecks.runAnnotationChecks(win)`. It uses fake annotation tools and memory-only history. Actual native annotation save and undo require a separate disposable PDF after permission to operate Zotero is given.
 
 ## 1.3.2 generation activity indicator
 
