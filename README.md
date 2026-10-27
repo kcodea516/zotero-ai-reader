@@ -1,8 +1,8 @@
-<h1 align="center">Zotero AI Reader:<br />Understand papers without leaving Zotero</h1>
+<h1 align="center">Zotero AI Reader:<br />Read papers, ask with images, and generate diagrams</h1>
 
 <p align="center">
   <strong>A native, simple sidebar for reading and discussing papers.</strong><br />
-  Ask about the current PDF, follow up in context, and return to the cited pages.
+  Ask about PDFs and screenshots, generate images with your GPT API, and return to the cited pages.
 </p>
 
 <p align="center">
@@ -20,7 +20,9 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/kcodea516/zotero-ai-reader?color=555" alt="MIT license" /></a>
 </p>
 
-Zotero AI Reader keeps the PDF and its discussion together. It uses Zotero's native controls, reads local paper text when permitted, and works with your own OpenAI-compatible Chat Completions endpoint. The interface supports English and Chinese.
+Zotero AI Reader keeps paper reading, image questions, and GPT image generation in one native sidebar. Connect your own OpenAI-compatible API, ask about the current PDF or an attached screenshot, and generate PNG/JPG diagrams without leaving Zotero. The interface supports English and Chinese.
+
+**Image generation and multimodal input are preview features.** Build [the preview branch](https://github.com/kcodea516/zotero-ai-reader/tree/codex/annotation-agent-preview) to use them; the stable 1.3.2 XPI does not include these features. Your provider must support vision for image questions and the Images API for image generation.
 
 **Feedback and contributors are welcome.** [Report a bug](https://github.com/kcodea516/zotero-ai-reader/issues/new?template=bug_report.yml), [suggest an improvement](https://github.com/kcodea516/zotero-ai-reader/issues/new?template=feature_request.yml), or help with testing, documentation, and code through the [contribution guide](CONTRIBUTING.md). You can write an issue in English or Chinese.
 
@@ -33,6 +35,9 @@ Zotero AI Reader keeps the PDF and its discussion together. It uses Zotero's nat
 The input stays below the conversation. Each answer can show the papers and PDF pages supplied for that turn; a page citation opens the local PDF. The screenshots use the actual macOS interface with a sample conversation and example endpoint, rather than live provider responses.
 
 ## What it does
+
+- **Generate images with your GPT API (preview).** Request PNG, JPG, or WebP images directly in chat using your saved endpoint and key. Click a result to zoom, copy it with the upper-right icon, or save it from the compact menu.
+- **Ask with images (preview).** Choose an image with the + button, paste a screenshot, or drop image files into the input. Thumbnails appear above your text and stay with the sent message.
 
 - **Read the current paper.** Ask for a section explanation, a definition, or an account of the method and its assumptions. Available original text is read automatically, so you do not have to paste each passage.
 - **Check the source.** Inspect which papers and pages were supplied, then click a citation to return to the PDF. Partial coverage is disclosed.
@@ -101,6 +106,14 @@ Short PDFs can be supplied in full; longer ones use selected pages and nearby pa
 
 Press **Enter** to send and **Shift+Enter** for a newline. Select PDF text and choose **Ask AI** to add an editable quotation without sending it. Use the copy icon below a message, or copy a full conversation as Markdown from **History**. Completed turns are sent with follow-up questions; switching providers sends that conversation to the newly selected endpoint. Failed and stopped turns are excluded from subsequent context.
 
+## Ask with screenshots and images (preview)
+
+Use the **+** icon beside the input to choose PNG, JPG, or WebP files. You can also paste a screenshot or drop image files into the input box. Small thumbnails appear above your question. Remove an attachment with its × button or click it for a larger view. A message can contain images without text; the assistant will describe them.
+
+Attachments stay in the local draft until you send the message. After sending, they appear above your text in the user bubble and remain in local history. Switching papers keeps each draft's images separate. Completed user-image turns are included in follow-up requests so a vision-capable model can continue discussing them. The selected endpoint receives the attached image bytes when you send; attachment selection alone makes no API request.
+
+Attach up to four images per message, at most 12 MB each and 24 MB total. Select a model with vision support. A text-only model or incompatible gateway can reject image content. For a reference-based image, attach the picture and ask explicitly, for example: "Generate a PNG diagram based on this screenshot." This uses the same configured endpoint and key through `/images/edits`.
+
 ## Generate and view images (preview)
 
 Ask directly in chat, for example: "Generate a PNG diagram of this pipeline" or "帮我生成一张 JPG 示意图". The plugin sends explicit image requests to the selected endpoint's Images API using its saved key. In Settings, each endpoint has an **Image model ID** field; a blank field uses `gpt-image-2.5-flare`. Set the model ID supported by your provider. The endpoint must implement `/images/generations` under its configured API prefix. An unsupported endpoint, unavailable model, or missing permission produces an error instead of a fabricated image.
@@ -109,18 +122,19 @@ Generated PNG, JPEG, and WebP images appear in the conversation and remain in lo
 
 For a vector diagram, ask for a complete SVG. It uses the same viewer and upper-right toolbar, with extra menu options to save SVG, copy SVG source, or show the original code. Static shapes, text, gradients, markers, and simple styles are supported. Scripts, embedded HTML, animation, and external resources are removed. Incomplete SVG remains code until complete.
 
-Current-paper excerpts and selected quotations can be included in a generated diagram's prompt when paper reading is enabled. Generated image bytes stay in the local conversation store. Subsequent text questions do not send those bytes back to the chat model. This version supports text-to-image generation; it does not edit an existing image or provide image-aware follow-up analysis. API compatibility, account access, and model charges are determined by your provider. See the [official Images API](https://developers.openai.com/api/reference/resources/images/methods/generate).
+Current-paper excerpts and selected quotations can be included in a generated diagram's prompt when paper reading is enabled. Generated image bytes stay in the local conversation store. Generated output images are not automatically sent back to the chat model; user-attached images are included with their completed turns. Attach reference images to an explicit generation request to use the Images Edit API. Your provider must support this endpoint as well. API compatibility, account access, and model charges are determined by your provider. See the [official Images API](https://developers.openai.com/api/reference/resources/images/methods/generate).
 
 Compatible chat responses can also supply inline base64 PNG/JPEG/WebP images. Ordinary remote Markdown image links remain blocked from automatic loading. When the Images API returns an HTTPS image URL, the plugin downloads it without forwarding your API key or cookies.
 
 ## Release channels
 
-| | Stable: 1.3.2 | Preview: 1.4.0-beta.5 |
+| | Stable: 1.3.2 | Preview: 1.4.0-beta.6 |
 | --- | --- | --- |
 | Paper Q&A, citations, on-demand library lookup, history | Available | Available |
 | Fold long user messages with Show more / Show less | Not included | Available |
 | Review and save AI-proposed PDF annotations | Not included | Experimental |
 | Images API generation, raster previews, and image zoom | Not included | Available |
+| Image inputs, screenshot paste, and reference-based generation | Not included | Available |
 | Get it | [Release XPI](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.2) | [Source branch](https://github.com/kcodea516/zotero-ai-reader/tree/codex/annotation-agent-preview) |
 
 The preview is available from source; the stable XPI does not contain its extra features. Follow the [build instructions](#build-from-source), switching to `codex/annotation-agent-preview` before installing dependencies.

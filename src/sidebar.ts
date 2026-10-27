@@ -1,3 +1,6 @@
+import { inputImagesFromFiles, type InputImage } from './image-data.ts';
+import { imageButton } from './image-viewer.ts';
+import { inputImageThumbnails } from './input-images-ui.ts';
 import { mountRaster } from './media.ts';
 import { mountMessageDisclosure } from './message-disclosure.ts';
 import { annotationMarkdown } from './annotations.ts';
@@ -43,6 +46,8 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   let modelsSignature = '';
   let historySignature = '';
   let quoteSignature = '';
+  let attachmentSignature = '';
+  let attachmentLoading = 0;
   let renderedConversationId = '';
   const copyTimers = new Map<string, number>();
   const historyRendered = new Map<string, { root: HTMLElement; title: HTMLElement; paper: HTMLElement; time: HTMLTimeElement; preview: HTMLElement; count: HTMLElement; badge: HTMLElement }>();
@@ -122,7 +127,12 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   // editable-text is transparent when empty and unfocused. Keep its outline
   // independent of the native control's editing/preview state.
   const draftFrame = el('div', 'zar-input-frame');
-  draftFrame.append(draft);
+  const draftAttachments=el('div','zar-draft-images');draftAttachments.hidden=true;
+  draftFrame.append(draftAttachments,draft);
+  const attachButton=imageButton(doc,'添加图片','plus',()=>{if(host.pickImages)importImages(()=>host.pickImages!(win));});attachButton.classList.add('zar-attach-image');attachButton.hidden=!host.pickImages;
+  draftFrame.addEventListener('paste',event=>{const files=Array.from(event.clipboardData?.files||[]);if(files.length){event.preventDefault();event.stopPropagation();importImages(()=>inputImagesFromFiles(files));}},true);
+  draftFrame.addEventListener('dragover',event=>{if(event.dataTransfer?.types.includes('Files'))event.preventDefault();});
+  draftFrame.addEventListener('drop',event=>{const files=Array.from(event.dataTransfer?.files||[]);if(files.length){event.preventDefault();event.stopPropagation();importImages(()=>inputImagesFromFiles(files));}});
   const composeFooter = el('div', 'zar-compose-footer');
   const hint = el('span', 'zar-muted zar-compose-hint', 'Enter 发送 · Shift+Enter 换行');
   const composeControls = el('div', 'zar-compose-controls');
@@ -132,13 +142,14 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   const stopControl = el('div', 'zar-stop-control');
   const stopProgress = el('span', 'zar-stop-progress'); stopProgress.setAttribute('aria-hidden', 'true');
   stopControl.append(stopButton, stopProgress);
-  composeControls.append(retryButton, sendButton, stopControl); composeFooter.append(hint, composeControls);
+  composeControls.append(retryButton, sendButton, stopControl); composeFooter.append(attachButton,hint, composeControls);
   const status = el('div', 'zar-status'); status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
   compose.append(quoteBox, draftFrame, composeFooter, status);
   root.append(toolbar, paper, history, messages, compose); body.append(root);
 
   function localizeStaticControls(): void {
     root.lang = language;
+    attachButton.title=t('添加图片，也可粘贴截图','Attach images or paste a screenshot');attachButton.setAttribute('aria-label',t('添加图片','Attach images'));
     root.setAttribute('aria-label', t('AI 阅读助手', 'AI Reading Assistant'));
     for (const [node, labels] of buttonLabels) {
       const label = t(labels.zh, labels.en);
@@ -188,9 +199,14 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     try { Promise.resolve(action()).catch(report); }
     catch (error) { report(error); }
   }
+  function importImages(load:()=>Promise<InputImage[]>): void {
+    const target=current()?.id;if(!target||destroyed)return;attachmentLoading++;render();
+    run(async()=>{try{const images=await load();if(!destroyed&&host.service.getConversation(target)&&images.length)host.service.addDraftImages(target,images);}
+      finally{attachmentLoading--;if(!destroyed)render();}});
+  }
   function submit(): void {
     const value = current();
-    if (!value || host.service.isBusy(value.id) || !(draft.value.trim() || value.quote?.text.trim())) return;
+    if (!value || attachmentLoading || host.service.isBusy(value.id) || !(draft.value.trim() || value.quote?.text.trim() || value.draftImages?.length)) return;
     if (!modelSelect.value) { actionError = '请先在设置中添加 API 和模型。'; renderStatus(); return; }
     host.service.setDraft(value.id, draft.value);
     run(() => host.service.send(value.id));
@@ -426,7 +442,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       } else messageRoot.append(header, quote, context, content, sources, annotation, error, actions);
       entry = { disclosure, annotation, root: messageRoot, content, signature: '', contentText: undefined, quoteRef: undefined, headerSignature: '', header, quote, error, copy, feedback, context, sources }; rendered.set(message.id, entry);
     }
-    const signature = JSON.stringify([language, message.status, message.error, message.modelName, message.endpointName, message.contextNotice, message.sources, message.images?.map(image=>image.id), message.annotationPlan, annotationActions.has(message.id), host.service.isBusy(current()?.id || '')]);
+    const signature = JSON.stringify([language, message.status, message.error, message.modelName, message.endpointName, message.contextNotice, message.sources, message.images?.map(image=>image.id), message.inputImages?.map(image=>image.id), message.annotationPlan, annotationActions.has(message.id), host.service.isBusy(current()?.id || '')]);
     if (entry.contentText !== message.content || entry.quoteRef !== message.quote || entry.signature !== signature) {
       entry.signature = signature; entry.contentText = message.content; entry.quoteRef = message.quote;
       const headerSignature = JSON.stringify([language, message.role, message.createdAt, message.modelName, message.endpointName]);
@@ -448,6 +464,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       entry.context.textContent = message.contextNotice ? localizeError(message.contextNotice, language) : '';
       entry.context.hidden = !message.contextNotice;
       renderMarkdown(entry.content, message.content || (message.status === 'streaming' && !message.contextNotice ? t('正在生成…', 'Generating…') : ''), host.openURL, message.sources, host.openSource, language, host);
+      if(message.inputImages?.length)entry.content.prepend(inputImageThumbnails(doc,message.inputImages,language));
       for (const image of message.images || []) entry.content.append(mountRaster(doc,image.dataURL,language,host));
       entry.sources.hidden = !message.sources?.length;
       entry.sources.replaceChildren();
@@ -515,6 +532,10 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       if (copyTimers.has(id)) win.clearTimeout(copyTimers.get(id));
       copyTimers.delete(id); rendered.get(id)?.disclosure?.destroy(); rendered.delete(id);
     }
+    const nextAttachments=JSON.stringify([value.id,language,(value.draftImages||[]).map(image=>image.id)]);
+    if(attachmentSignature!==nextAttachments){attachmentSignature=nextAttachments;draftAttachments.replaceChildren();draftAttachments.hidden=!value.draftImages?.length;
+      if(value.draftImages?.length)draftAttachments.append(inputImageThumbnails(doc,value.draftImages,language,id=>{host.service.removeDraftImage(value!.id,id);draft.focus();}));}
+    attachButton.disabled=attachmentLoading>0;
     if (draft.value !== value.draft) draft.value = value.draft;
     draft.placeholder = foreign ? t('继续这段会话…', 'Continue this chat…') : t('询问这篇文献…', 'Ask about this paper…');
     const nextQuoteSignature = JSON.stringify([language, value.id, value.quote]);
@@ -532,7 +553,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     sendButton.setAttribute('label', sendLabel); sendButton.setAttribute('aria-label', sendLabel);
     sendButton.hidden = busy; stopButton.hidden = !busy; stopControl.hidden = !busy;
     nativeTooltip(stopButton, t('正在生成，点击停止', 'Generating; click to stop'));
-    sendButton.disabled = !(value.draft.trim() || value.quote?.text.trim()) || !modelSelect.value;
+    sendButton.disabled = !!attachmentLoading || !(value.draft.trim() || value.quote?.text.trim() || value.draftImages?.length) || !modelSelect.value;
     nativeTooltip(sendButton, modelSelect.value ? t('发送问题及本次引用', 'Send question and quoted passage') : t('请先在设置中添加 API 和模型', 'Add an API endpoint and model in Settings first.'));
     retryButton.disabled = !modelSelect.value;
     const lastAssistant = [...value.messages].reverse().find(message => message.role === 'assistant');

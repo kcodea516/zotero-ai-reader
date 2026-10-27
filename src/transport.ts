@@ -1,4 +1,4 @@
-import { isRasterDataURL } from './image-data.ts';
+import { isRasterDataURL, checkInputImages } from './image-data.ts';
 import { bilingualError } from './i18n-errors.ts';
 import type { ChatRequest } from './types.ts';
 
@@ -51,6 +51,11 @@ function completion(value: any, request: Pick<ChatRequest, 'onText' | 'onImage'>
 /** A single request: no retries, cookies, SDK, or access to Zotero UI state. */
 export async function chatCompletion(request: ChatRequest): Promise<{ truncated?: boolean }> {
   const url = normalizeEndpoint(request.endpoint.baseURL);
+  const messages = request.messages.map(message => {
+    if(!message.images?.length) return {role:message.role,content:message.content};
+    checkInputImages(message.images);
+    return {role:message.role,content:[{type:'text',text:message.content||'Describe the attached images.'},...message.images.map(image=>({type:'image_url',image_url:{url:image.dataURL}}))]};
+  });
   const controller = new AbortController();
   let timedOut = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -70,7 +75,7 @@ export async function chatCompletion(request: ChatRequest): Promise<{ truncated?
     try {
       response = await fetch(url, {
         method: 'POST', headers,
-        body: JSON.stringify({ model: request.model.model, messages: request.messages, stream: request.endpoint.stream }),
+        body: JSON.stringify({ model: request.model.model, messages, stream: request.endpoint.stream }),
         signal: controller.signal, credentials: 'omit', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer',
       });
     } catch {

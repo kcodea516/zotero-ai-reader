@@ -1,16 +1,16 @@
 import { bilingualError } from './i18n-errors.ts';
 import { normalizeEndpoint } from './transport.ts';
-import { imageDataURL, isRasterDataURL, MAX_IMAGE_BYTES, type GeneratedImage } from './image-data.ts';
+import { imageDataURL, isRasterDataURL, MAX_IMAGE_BYTES, checkInputImages, type InputImage, type GeneratedImage } from './image-data.ts';
 import type { EndpointConfig } from './types.ts';
 
 export const DEFAULT_IMAGE_MODEL = 'gpt-image-2.5-flare';
-export interface ImageRequest { endpoint: EndpointConfig; key: string; prompt: string; signal: AbortSignal; format?: 'png' | 'jpeg' | 'webp' }
+export interface ImageRequest { endpoint: EndpointConfig; key: string; prompt: string; signal: AbortSignal; format?: 'png' | 'jpeg' | 'webp'; images?: InputImage[] }
 export type ImageTransport = (request: ImageRequest) => Promise<GeneratedImage[]>;
 export function imageEndpoint(base: string): string { return normalizeEndpoint(base).replace(/\/chat\/completions$/, '/images/generations'); }
 export function requestsImage(input: string): boolean {
   const text = input.replace(/```[\s\S]*?```|^\s*>.*$/gm, '').replace(/"[^"\n]*"|“[^”\n]*”|「[^」\n]*」/g, '').trim();
   if (/\bsvg\b/i.test(text) && !/(?:不要|不用|不是|not).{0,5}\bsvg\b/i.test(text)) return false;
-  return text.split(/[。！？!?;；\n]/).some(value => {
+  return text.split(/[。！？!?;；，,\n]/).some(value => {
     const part=value.trim();
     if (/(?:不要|不用|无需|先不|别).{0,12}(?:生图|画|生成.{0,5}图)|\b(?:do not|don't|without)\b.{0,20}(?:generat|draw|image)/i.test(part)) return false;
     if (/^(?:解释|什么是|如何|怎么|why\b|what\b|how\b|explain\b)/i.test(part)) return false;
@@ -36,10 +36,18 @@ export const generateImage: ImageTransport = async request => {
   request.signal.addEventListener('abort', abort, { once: true }); if (request.signal.aborted) controller.abort();
   const timer = setTimeout(abort, 300000);
   try {
-    const response = await fetch(imageEndpoint(request.endpoint.baseURL), { method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(request.key ? { Authorization: `Bearer ${request.key}` } : {}) },
-      body: JSON.stringify({ model: request.endpoint.imageModel?.trim() || DEFAULT_IMAGE_MODEL, prompt: request.prompt.slice(0,32000), n: 1, size: 'auto', output_format: request.format || 'png' }),
-      signal: controller.signal, credentials: 'omit', redirect: 'error', cache: 'no-store', referrerPolicy: 'no-referrer' });
+    const payload = {model:request.endpoint.imageModel?.trim()||DEFAULT_IMAGE_MODEL,prompt:request.prompt.slice(0,32000),n:1,size:'auto',output_format:request.format||'png'};
+    const headers:Record<string,string>=request.key?{Authorization:`Bearer ${request.key}`} : {};
+    let url=imageEndpoint(request.endpoint.baseURL), body:BodyInit;
+    if(request.images?.length){
+      checkInputImages(request.images);url=url.replace(/\/generations$/,'/edits');const form=new FormData();
+      for(const [key,value] of Object.entries(payload))form.append(key,String(value));
+      for(const [i,image] of request.images.entries()){
+        const mime=image.dataURL.slice(5,image.dataURL.indexOf(';'));const bytes=Uint8Array.from(atob(image.dataURL.split(',')[1]),char=>char.charCodeAt(0));
+        form.append('image[]',new Blob([bytes],{type:mime}),`input-${i+1}.${mime==='image/jpeg'?'jpg':mime==='image/webp'?'webp':'png'}`);
+      }body=form;
+    }else{headers['Content-Type']='application/json';body=JSON.stringify(payload);}
+    const response = await fetch(url,{method:'POST',headers,body,signal:controller.signal,credentials:'omit',redirect:'error',cache:'no-store',referrerPolicy:'no-referrer'});
     if (!response.ok) throw bilingualError(`生图请求失败（${response.status}）。请检查此接口的生图支持、模型 ID、密钥权限和额度。`, `Image generation failed (${response.status}). Check image API support, image model ID, key permissions, and quota.`);
     let value: any; try { value = JSON.parse(new TextDecoder().decode(await boundedBytes(response, 18 * 1024 * 1024))); } catch { throw new Error('Invalid response'); }
     const item = value?.data?.[0]; let dataURL: string;

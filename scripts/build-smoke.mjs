@@ -53,3 +53,5 @@ console.log('Built sidebar, reading, history, settings, language and annotation 
 await build({ entryPoints: [resolve(root, 'tests/zotero-graphics.integration.ts')], bundle: true, format: 'iife', globalName: 'AIReaderGraphicsChecks', platform: 'browser', target: 'firefox140', outfile: resolve(root, 'build/graphics-checks.js') });
 
 await build({ entryPoints: [resolve(root, 'tests/zotero-image-chat.integration.ts')], bundle: true, format: 'iife', globalName: 'AIReaderImageChatChecks', platform: 'browser', target: 'firefox140', outfile: resolve(root, 'build/image-chat-checks.js') });
+
+await build({ entryPoints: [resolve(root, 'tests/zotero-input-images.integration.ts')], bundle: true, format: 'iife', globalName: 'AIReaderInputImagesChecks', platform: 'browser', target: 'firefox140', outfile: resolve(root, 'build/input-images-checks.js') });

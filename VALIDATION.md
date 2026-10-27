@@ -1,5 +1,11 @@
 # 验证记录
 
+## Multimodal input: 1.4.0-beta.6
+
+On 2026-10-27, TypeScript checks and all 128 automated tests passed. New tests cover raster file validation and limits, attachment drafts across restart, atomic additions, image-only sends, completed image turns in follow-up context, vision content-part encoding without local filename metadata, multipart reference-image generation, and retry preservation.
+
+The final XPI was installed in Zotero on macOS. Native fixtures passed 122 checks: 20 input-image checks, 61 ordinary-sidebar checks, 20 SVG checks, and 21 image-generation/viewer checks. The new fixture exercised the attachment button through a fake picker, synthetic screenshot paste and file drop events, removal, thumbnail placement above composer text, image-only sends, sent thumbnails and zoom, separate drafts when switching papers, and 24-pixel translucent output-image controls. It used in-memory history and simulated providers. No API credits, system clipboard content, or existing paper annotations were used or changed. The actual operating-system file picker and clipboard-paste bridge were not separately exercised.
+
 ## Image generation and viewer: 1.4.0-beta.5
 
 On 2026-10-27, TypeScript checks and all 122 automated tests passed. The suite covers explicit image-intent routing, provider/key reuse, Images API payloads, inline chat image parts, PNG/JPEG/WebP signatures, bounded responses, URL downloads without bearer credentials, blocked private destinations, safe errors, persistence, cancellation, retry, and ordinary follow-up questions without image bytes in model context. API tests use mocked fetch responses.

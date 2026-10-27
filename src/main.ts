@@ -1,3 +1,4 @@
+import { imageDataURL, MAX_IMAGE_BYTES, checkInputImages } from './image-data.ts';
 import { createZoteroAnnotationTools } from './zotero-annotations.ts';
 import { ChatService } from './core';
 import { ZoteroRepository, ZoteroSecretStore } from './platform';
@@ -279,6 +280,16 @@ export async function startup({ id = ADDON_ID, version = '', rootURI }: { id?: s
     copy(text: string) {
       Components.classes['@mozilla.org/widget/clipboardhelper;1']
         .getService(Components.interfaces.nsIClipboardHelper).copyString(text);
+    },
+    async pickImages(win?: Window) {
+      const {FilePicker}=ChromeUtils.importESModule('chrome://zotero/content/modules/filePicker.mjs');const picker=new FilePicker();
+      picker.init(win||Zotero.getMainWindow(),tr(getLanguage(service!.getConfig()),'添加图片','Attach images'),picker.modeOpenMultiple);picker.appendFilter('PNG, JPG, WebP','*.png; *.jpg; *.jpeg; *.webp');
+      if(await picker.show()===picker.returnCancel)return [];
+      const paths=picker.files;if(paths.length>4)throw new Error(tr(getLanguage(service!.getConfig()),'最多添加 4 张图片。','Attach up to 4 images.'));
+      const images=[];
+      for(const path of paths){if((await IOUtils.stat(path)).size>MAX_IMAGE_BYTES)throw new Error(tr(getLanguage(service!.getConfig()),'单张图片不能超过 12 MB。','Each image must be 12 MB or smaller.'));
+        const bytes=await IOUtils.read(path);images.push({id:globalThis.crypto.randomUUID(),name:PathUtils.filename(path).slice(0,256),dataURL:imageDataURL(bytes)});}
+      checkInputImages(images);return images;
     },
     async copyImage(png: string) {
       if (!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(png) || png.length > 20_000_000) throw new Error('Invalid PNG');

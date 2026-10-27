@@ -7,6 +7,9 @@ async function startup(data) {
     if (typeof AbortController === 'undefined') {
       Components.utils.importGlobalProperties(['AbortController']);
     }
+    for (const name of ['Blob', 'FormData']) {
+      if (typeof globalThis[name] === 'undefined') Components.utils.importGlobalProperties([name]);
+    }
     Services.scriptloader.loadSubScript(data.rootURI + 'content/main.js', globalThis);
     aiReaderLoaded = true;
     await AIReaderBundle.startup(data);
