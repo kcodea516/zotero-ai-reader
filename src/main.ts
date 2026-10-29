@@ -1,3 +1,4 @@
+import { saveConversation } from './zotero-export.ts';
 import { closeImageViewer } from './image-viewer.ts';
 import { imageDataURL, MAX_IMAGE_BYTES, checkInputImages } from './image-data.ts';
 import { createZoteroAnnotationTools } from './zotero-annotations.ts';
@@ -301,6 +302,7 @@ export async function startup({ id = ADDON_ID, version = '', rootURI }: { id?: s
       transfer.init(null); transfer.addDataFlavor('application/x-moz-nativeimage'); transfer.setTransferData('application/x-moz-nativeimage', image);
       Components.classes['@mozilla.org/widget/clipboard;1'].getService(Components.interfaces.nsIClipboard).setData(transfer, null, Components.interfaces.nsIClipboard.kGlobalClipboard);
     },
+    exportConversation: (chat, format, win) => saveConversation(chat, format, getLanguage(service!.getConfig()), win),
     async saveImage(dataURL: string, filename: string) {
       if (!/^ai-reader-diagram\.(?:svg|png|jpg|webp)$/.test(filename) || dataURL.length > 20_000_000) throw new Error('Invalid image');
       let bytes: Uint8Array;

@@ -1,3 +1,4 @@
+import { conversationMarkdown, type ExportFormat } from './chat-export.ts';
 import { inputImagesFromFiles, type InputImage } from './image-data.ts';
 import { imageButton } from './image-viewer.ts';
 import { inputImageThumbnails } from './input-images-ui.ts';
@@ -82,7 +83,37 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   relatedLabel.append(relatedCheck, relatedLabelText);
   relatedLabel.title = '仅在问题需要比较其他文献或补充依据时，检索同一 Zotero 文库（不限当前分组）中的原文。';
   readingOptions.append(currentLabel, relatedLabel);
-  paper.append(paperLabel, paperTitle, returnButton, readingOptions);
+  const functionBar = el('div', 'zar-function-bar');
+  functionBar.setAttribute('role', 'group');
+  const functionLabel = el('div', 'zar-function-label');
+  const exportMenu = button('导出', () => {}, 'zar-export-menu', 'Export');
+  exportMenu.setAttribute('type', 'menu');
+  const exportChoices = doc.createElementNS('http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul', 'menupopup') as HTMLElement & { hidePopup(): void };
+  // Keep the popup and its items native. A blur on an HTML details wrapper can
+  // hide XUL buttons between pointer-down and their command event.
+
+  let exporting = false;
+  const exportActions = (['md', 'txt', 'pdf'] as ExportFormat[]).map(format => {
+    const choice = doc.createElementNS('http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul', 'menuitem') as NativeButton;
+    choice.setAttribute('label', format === 'md' ? 'Markdown (.md)' : format.toUpperCase() + ' (.' + format + ')');
+    choice.addEventListener('command', () => {
+      const value = current(); if (!value?.messages.length || exporting || !host.exportConversation) return;
+      // Capture before opening the picker so streaming/navigation cannot change this export.
+      const snapshot: Conversation = JSON.parse(JSON.stringify(value));
+      exportChoices.hidePopup(); exporting = true; exportMenu.disabled = true; exportActions.forEach(b => b.disabled = true);
+      actionError = t('正在导出…', 'Exporting…'); renderStatus();
+      void host.exportConversation(snapshot, format, win).then(saved => {
+        actionError = saved ? t('对话已导出。', 'Chat exported.') : '';
+      }).catch(error => { actionError = localizeError(error, language); }).finally(() => {
+        exporting = false; if (!destroyed) render();
+      });
+    });
+    exportChoices.append(choice); return choice;
+  });
+  exportMenu.append(exportChoices); exportMenu.hidden = !host.exportConversation;
+  readingOptions.append(exportMenu);
+  functionBar.append(functionLabel, readingOptions);
+  paper.append(paperLabel, paperTitle, returnButton, functionBar);
   const history = el('div', 'zar-history');
   history.setAttribute('role', 'region'); history.setAttribute('aria-label', '历史对话');
   const historyHeader = el('div', 'zar-history-header');
@@ -100,11 +131,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
   const exportButton = button('复制当前会话为 Markdown', () => {
     const value = current();
     if (!value) return;
-    const content = [`# ${value.title}`, '', `${t('文献：', 'Paper: ')}${value.scope.title}`, '', ...value.messages.flatMap(message => [
-      `## ${message.role === 'user' ? t('我', 'You') : 'AI'}${message.modelName ? ` · ${message.endpointName || ''} / ${message.modelName}` : ''}`,
-      '', ...(message.quote ? [`> ${message.quote.text.split('\n').join('\n> ')}`, ''] : []), message.content + annotationMarkdown(message.annotationPlan),
-      ...(message.status === 'complete' ? [] : [`\n[${statusLabel(message.status)}]`]), '',
-    ])].join('\n');
+    const content = conversationMarkdown(value, language);
     host.copy(content); actionError = '已复制当前会话。'; renderStatus();
   }, 'zar-text-button', 'Copy chat as Markdown');
   history.append(historyHeader, historyControls, historyList, exportButton, historyStatus);
@@ -149,6 +176,9 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
 
   function localizeStaticControls(): void {
     root.lang = language;
+    functionLabel.textContent = t('功能栏', 'Tools');
+    functionBar.setAttribute('aria-label', t('功能栏', 'Tools'));
+    nativeTooltip(exportMenu, t('导出当前对话', 'Export current chat'));
     attachButton.title=t('添加图片，也可粘贴截图','Attach images or paste a screenshot');attachButton.setAttribute('aria-label',t('添加图片','Attach images'));
     root.setAttribute('aria-label', t('AI 阅读助手', 'AI Reading Assistant'));
     for (const [node, labels] of buttonLabels) {
@@ -519,6 +549,8 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     renderedConversationId = value.id;
     const foreign = !sameScope(value.scope, scope);
     paperLabel.textContent = foreign ? t('正在查看其他文献的会话', 'Chat for another paper') : t('当前文献', 'Current paper');
+    exportMenu.disabled = !value.messages.length || exporting;
+    exportActions.forEach(b => b.disabled = !value.messages.length || exporting);
     paperTitle.textContent = value.scope.title; paperTitle.title = value.scope.title;
     returnButton.hidden = !foreign;
     renderModels(value);

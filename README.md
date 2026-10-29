@@ -55,6 +55,10 @@ You can attach a reference image and ask for a new image based on it. This uses 
 
 Ask the assistant to highlight or underline passages and add comments. It prepares a proposal for you to review; select the annotations you want and save them to the PDF. You can undo a saved batch. The current preview works with matching text passages, and supports up to eight proposed annotations per request.
 
+### Export a conversation · preview
+
+Choose **Export** on the right of the **Tools** bar below the paper title, select Markdown, TXT, or PDF, and choose where to save it. The export includes every message in the current conversation, quoted passages, and paper sources. Markdown embeds attached and generated images; PDF lays out text, tables, formulas, and static images across pages. TXT keeps the text and labels each image. Unsent drafts stay in the composer.
+
 ## Installation
 
 The stable release includes paper Q&A, citations, library lookup, and history. Image input, image generation, and annotation proposals are in the [preview branch](https://github.com/kcodea516/zotero-ai-reader/tree/codex/annotation-agent-preview).
@@ -93,7 +97,7 @@ Choose the interface language, default model, system prompt, and message color h
 
 ## Stable and preview
 
-| Feature | Stable 1.3.2 | Preview 1.4.0-beta.10 |
+| Feature | Stable 1.3.2 | Preview 1.4.0-beta.12 |
 | --- | --- | --- |
 | Paper Q&A, citations, library lookup, history | Yes | Yes |
 | Fold long user messages | — | Yes |

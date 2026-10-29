@@ -252,3 +252,9 @@
 .zar-image-viewer .zar-svg-controls input[type="range"]::-moz-range-track { height:4px;border-radius:2px;background:#ffffff40; }
 .zar-image-viewer .zar-svg-controls input[type="range"]::-moz-range-progress { height:4px;border-radius:2px;background:#72a8ff; }
 .zar-image-viewer .zar-svg-controls input[type="range"]::-moz-range-thumb { width:12px;height:12px;border:0;border-radius:50%;background:#fff; }
+
+/* Reading and export actions share one compact tool group. */
+.zar-root .zar-function-bar { margin-top:8px; padding:6px 8px 8px; border:1px solid var(--zar-border); border-radius:7px; background:color-mix(in srgb, Canvas 75%, transparent); }
+.zar-root .zar-function-label { color:var(--zar-muted); font-size:.78em; line-height:1.2; margin-bottom:5px; }
+.zar-root .zar-function-bar .zar-reading-options { margin-top:0; gap:6px 10px; }
+.zar-root .zar-export-menu { margin:0; margin-inline-start:auto; flex-shrink:0; min-width:0; }

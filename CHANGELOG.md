@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.4.0-beta.12 (preview)
+
+- Use a native export popup so format selection does not depend on an HTML wrapper retaining focus.
+- Group Read paper, Search library as needed, and Export in a bordered Tools bar below the paper title.
+
+## 1.4.0-beta.11 (preview)
+
+- Export the current conversation as Markdown, TXT, or PDF from the current-paper header.
+- Choose a destination with the native save dialog.
+- Include complete messages, quotes, per-response sources, and completion status; leave unsent drafts out.
+- Embed images in Markdown and paginate PDF exports with tables, formulas, and static diagrams.
+- Write the complete export before replacing an existing destination file.
+
 ## 1.4.0-beta.10 (preview)
 
 - Open SVG diagrams in an interactive viewer with playback, pause, restart, and zoom.

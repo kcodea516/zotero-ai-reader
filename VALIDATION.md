@@ -1,5 +1,11 @@
 # 验证记录
 
+## Export menu and tool group: 1.4.0-beta.12
+
+On 2026-10-29, TypeScript checks and all 133 automated tests passed. In Zotero 10.0.6 on macOS, the native export fixture passed 23 checks, including all three format commands, stable conversation snapshots, duplicate-export prevention, and control recovery after saving or cancelling. The fixture also printed a PDF containing Chinese text, tables, math, and images.
+
+After installing beta.12, selecting Markdown, TXT, and PDF from the sidebar each opened the native save dialog with the matching format. Each dialog was cancelled, then the menu was opened again. The bordered Tools group contains Read paper, Search library as needed, and Export on the right. These checks made no model requests.
+
 ## Multimodal input: 1.4.0-beta.6
 
 On 2026-10-27, TypeScript checks and all 128 automated tests passed. New tests cover raster file validation and limits, attachment drafts across restart, atomic additions, image-only sends, completed image turns in follow-up context, vision content-part encoding without local filename metadata, multipart reference-image generation, and retry preservation.
@@ -211,3 +217,11 @@ The SVG fixture covers SMIL and CSS animation, script timers, `requestAnimationF
 After installation, an existing SVG from chat history loaded with eight animation elements. Its timeline advanced, and the native pause button stopped it. Tests used no real model requests and made no library or annotation changes.
 
 The viewer runs self-contained diagrams offline. Timeline seeking controls SVG/CSS animations; restarting resets scripted state. Pause covers SMIL, CSS/Web Animations, and scripts using animation-frame callbacks or function-based timers. It does not suspend arbitrary JavaScript execution or reconstruct scripted state at an arbitrary timeline position. PNG/JPG copying and export use the static thumbnail.
+
+## Conversation export: 1.4.0-beta.11
+
+Checked on Zotero 10.0.6 on macOS, 2026-10-29. TypeScript checks and all 133 automated tests passed. The native export fixture passed 22 checks covering the three format choices, stable conversation snapshots, save/cancel handling, complete message content, image embedding, and PDF rendering.
+
+A 12-message bilingual fixture produced a six-page A4 PDF. Rendered pages were inspected for Chinese text, tables, code, MathML formulas, raster images, and a static SVG diagram. All three formats were also saved through the installed plugin's native file picker. A separate check changed the destination to a temporary directory and verified the resulting file. The current-paper header and export menu were checked in the reader.
+
+Tests used synthetic conversations and made no model requests or library changes. TXT records image labels; Markdown embeds raster images and retains SVG source; PDF renders static images. Unsent drafts are excluded. An in-progress answer is exported as a snapshot with its status.
