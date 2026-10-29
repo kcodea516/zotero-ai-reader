@@ -61,7 +61,7 @@ Choose **Export** on the right of the **Tools** bar below the paper title, selec
 
 ## Installation
 
-The stable release includes paper Q&A, citations, library lookup, and history. Image input, image generation, and annotation proposals are in the [preview branch](https://github.com/kcodea516/zotero-ai-reader/tree/codex/annotation-agent-preview).
+The stable release includes paper Q&A, citations, library lookup, and history. Image input, image generation, annotation proposals, and conversation export are available in the [1.4.0-beta.12 preview release](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.4.0-beta.12).
 
 1. Download `zotero-ai-reader-1.3.2.xpi` from the [stable release](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.2).
 2. In Zotero, open **Tools → Plugins**, then choose **Install Plugin From File** from the gear menu.
@@ -103,7 +103,7 @@ Choose the interface language, default model, system prompt, and message color h
 | Fold long user messages | — | Yes |
 | Propose PDF annotations | — | Experimental |
 | Image input, image generation, and viewer | — | Yes |
-| Install | [Release XPI](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.2) | [Build from source](https://github.com/kcodea516/zotero-ai-reader/tree/codex/annotation-agent-preview) |
+| Install | [Release XPI](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.2) | [Preview XPI](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.4.0-beta.12) |
 
 The preview's text annotations are matched against PDF coordinates before saving. Ambiguous or unmatched passages cannot be saved, and editing an annotation blocks undo of its batch. The preview reads up to 80 pages and 110,000 characters for an annotation proposal. Its [validation record](https://github.com/kcodea516/zotero-ai-reader/blob/codex/annotation-agent-preview/VALIDATION.md) describes the tests run so far.
 
