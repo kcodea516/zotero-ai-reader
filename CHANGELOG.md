@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.4.0-beta.14 (preview)
+
+- Recognize direct PDF annotation requests expressed as needs or corrections, including lowercase `pdf` and spaces around the name.
+- Include recent completed user and assistant turns when planning annotations, so requests can refer to an earlier list.
+- Specify the native blue underline style and explain the local PDF annotation capability to the planner.
+- Exercise the reported Chinese request through chat routing, local PDF matching, native underline/comment storage, and undo on a disposable PDF.
+
+## 1.4.0-beta.13 (preview)
+
+- Recognize Chinese passage-search and annotation requests, including 批注, 画线, and 圈起来.
+- Route PDF annotation requests before image-generation requests.
+- Label unsaved PDF annotation previews and make the Save to PDF action explicit.
+- Tell the annotation planner to preserve the requested underline style and attach comments to the original passages.
+
 ## 1.4.0-beta.12 (preview)
 
 - Use a native export popup so format selection does not depend on an HTML wrapper retaining focus.

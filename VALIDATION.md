@@ -1,5 +1,23 @@
 # 验证记录
 
+## Annotation README screenshots
+
+On 2026-10-30, the README gained an English-only crop from a native Zotero screenshot showing blue underlines on a paragraph in Nova. The crop excludes chat history, endpoint settings, and Chinese interface text. No annotation was changed to take these screenshots.
+
+## Direct PDF requests and conversation scope: 1.4.0-beta.14
+
+On 2026-10-30, the user's exact request was reproduced as a routing failure in beta.13. The fix recognizes that request and other direct Chinese PDF commands, including lowercase `pdf`. The annotation planner now receives up to six recent completed messages, capped at 18,000 characters, to resolve references to earlier discussion.
+
+TypeScript checks and all 137 automated tests passed. In Zotero 10.0.6 on macOS, 17 UI checks passed using the reported wording. A separate fixture passed 14 checks on a disposable PDF using the installed service and annotation adapter: the exact request entered the annotation flow, the prior assistant list reached the planner, both passages were found, and native blue underlines with Chinese comments were saved at PDF coordinates. Duplicate-save prevention, passage navigation, edited-comment protection, and batch undo also passed. The fixture used a simulated model response; live-provider selection quality was not tested.
+
+The installed beta.14 XPI matches the build by SHA-256. Configuration and conversations, including drafts, matched before and after installation. The test PDF was moved to Trash and its tab closed; existing paper annotations were unchanged.
+
+## PDF annotation routing: 1.4.0-beta.13
+
+On 2026-10-30, TypeScript checks and all 135 automated tests passed. New cases cover Chinese passage-search, underline and comment requests, ordinary questions, negations, quoted commands, and requests limited to chat output. A mocked end-to-end test routes a passage request through planning, saves an underline with its comment and coordinates, and undoes that batch.
+
+Version 1.4.0-beta.13 was installed and enabled in Zotero 10.0.6 on macOS. The installed XPI matches the built package by SHA-256. The native annotation UI fixture passed all 17 checks, including passage navigation, selected-candidate saving, receipts, undo, narrow-sidebar layout, and language switching. It used simulated annotation tools and memory-only history. This update did not make real model requests or write annotations into a real PDF; existing annotations were untouched.
+
 ## Export menu and tool group: 1.4.0-beta.12
 
 On 2026-10-29, TypeScript checks and all 133 automated tests passed. In Zotero 10.0.6 on macOS, the native export fixture passed 23 checks, including all three format commands, stable conversation snapshots, duplicate-export prevention, and control recovery after saving or cancelling. The fixture also printed a PDF containing Chinese text, tables, math, and images.

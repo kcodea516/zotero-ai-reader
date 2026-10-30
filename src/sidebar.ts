@@ -358,7 +358,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
     const disabled = !host.annotations || annotationActions.has(message.id) || host.service.isBusy(conversation.id);
     let selected = annotationSelections.get(plan.id);
     if (!selected) { selected = new Set(plan.items.filter(i => i.status === 'ready' && !plan.receipts.some(r => r.candidateID === i.id)).map(i => i.id)); annotationSelections.set(plan.id, selected); }
-    container.append(el('div', 'zar-annotation-heading', plan.undone ? t('本批标注已撤销', 'This annotation batch was undone') : t('标注预览', 'Annotation preview')));
+    container.append(el('div', 'zar-annotation-heading', plan.undone ? t('本批标注已撤销', 'This annotation batch was undone') : (plan.receipts.length ? t('PDF 原文标注', 'PDF annotations') : t('原文标注预览 · 尚未写入 PDF', 'PDF annotation preview · Not saved yet'))));
     for (const item of plan.items) {
       const applied = plan.receipts.some(r => r.candidateID === item.id) && !plan.undone;
       const card = el('div', 'zar-annotation-card');
@@ -381,7 +381,7 @@ export function mountSidebar(body: HTMLElement, initialScope: PaperScope, host: 
       container.append(card);
     }
     const controls = el('div', 'zar-annotation-actions');
-    const apply = nativeButton(doc, t('写入所选标注', 'Save selected annotations'), () => { void act(false); });
+    const apply = nativeButton(doc, t('写入 PDF 标注', 'Save to PDF'), () => { void act(false); });
     function updateApply() { apply.disabled = disabled || !!plan!.undone || ![...selected!].some(id => plan!.items.some(i => i.id === id && i.status === 'ready') && !plan!.receipts.some(r => r.candidateID === id)); }
     updateApply();
     const undo = nativeButton(doc, t('撤销本批标注', 'Undo this batch'), () => { void act(true); });

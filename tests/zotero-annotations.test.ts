@@ -151,3 +151,65 @@ test('ordinary sends route only the current explicit instruction and preserve re
     assert.equal(c.messages[5].status, 'error'); assert.equal(c.messages[5].annotationPlan, undefined); assert.equal(s.writes, 0);
   } finally { await chat.shutdown(); }
 });
+
+test('find-and-comment chat produces native PDF underlines with attached comments', async () => {
+  const s = setup();
+  const transport: ChatTransport = async request => {
+    assert.match(request.messages[0].content, /You propose PDF annotations/);
+    request.onText(JSON.stringify({ summary: 'Found the resource-sharing passage.', annotations: [{ page: 1, quote, comment: '解释：编码和解码共享 GPU。', type: 'underline', color: '#ff6666' }] })); return {};
+  };
+  const service = new ChatService({ async load() { return null; }, async save() {} }, secrets, transport, undefined, s.tools.plan);
+  await service.init(); await service.saveConfig(config);
+  try {
+    const chat = service.forScope(scope);
+    service.setDraft(chat.id, '帮我找出编码和解码共享资源的段落，画线并批注'); await service.send(chat.id);
+    assert.equal(chat.messages[0].intent, 'annotate');
+    const plan = chat.messages[1].annotationPlan!;
+    assert.equal(plan.items[0].status, 'ready');
+    plan.receipts = await s.tools.apply(plan, ['0']);
+    const saved = s.shown[0];
+    assert.equal(saved.parentID, s.pdf.id);
+    assert.equal(saved.annotationType, 'underline');
+    assert.equal(saved.annotationColor, '#ff6666');
+    assert.equal(saved.annotationComment, '解释：编码和解码共享 GPU。');
+    assert.ok(JSON.parse(saved.annotationPosition).rects.length);
+    await s.tools.undo(plan); assert.equal(saved.deleted, true);
+  } finally { await service.shutdown(); }
+});
+
+
+test('exact PDF correction carries the earlier assistant list into planning and saves blue underlines', async () => {
+  const s = setup();
+  const earlier = '六项：①优化目标 ②阶段划分 ③资源争用 ④并行机制 ⑤调度策略 ⑥局限性';
+  let plans = 0, chats = 0;
+  const transport: ChatTransport = async request => {
+    if (!request.messages[0].content.includes('You propose PDF annotations')) {
+      chats++; request.onText(earlier); return {};
+    }
+    plans++;
+    const payload = JSON.parse(request.messages[1].content);
+    assert.ok(payload.recentConversation.some((m: any) => m.role === 'assistant' && m.content === earlier));
+    assert.equal(payload.recentConversation.at(-1).role, 'assistant');
+    assert.ok(payload.recentConversation.reduce((n: number, m: any) => n + m.content.length, 0) <= 18000);
+    assert.match(payload.instruction, /我需要的是你直接在pdf/);
+    assert.match(request.messages[0].content, /蓝色下划线 means type underline and color #2ea8e5/);
+    request.onText(JSON.stringify({ summary: '', annotations: [{ page: 1, quote, comment: '资源争用：编码和解码共享 GPU。', type: 'underline', color: '#2ea8e5' }] })); return {};
+  };
+  const service = new ChatService({ async load() { return null; }, async save() {} }, secrets, transport, undefined, s.tools.plan);
+  await service.init(); await service.saveConfig(config);
+  try {
+    const c = service.forScope(scope);
+    service.setDraft(c.id, '列出我该关注的六项'); await service.send(c.id);
+    service.setDraft(c.id, '我需要的是你直接在pdf上面进行批注，用蓝色下划线，然后标注对应的解释，按前面的六项'); await service.send(c.id);
+    assert.equal(c.messages[2].intent, 'annotate');
+    assert.equal(chats, 1); assert.equal(plans, 1);
+    const plan = c.messages[3].annotationPlan!;
+    assert.equal(plan.items[0].status, 'ready');
+    await s.tools.apply(plan, ['0']);
+    assert.equal(s.shown[0].annotationType, 'underline');
+    assert.equal(s.shown[0].annotationColor, '#2ea8e5');
+    assert.equal(s.shown[0].annotationComment, '资源争用：编码和解码共享 GPU。');
+    service.setDraft(c.id, '继续解释第一项'); await service.send(c.id);
+    assert.equal(chats, 2); assert.equal(plans, 1);
+  } finally { await service.shutdown(); }
+});

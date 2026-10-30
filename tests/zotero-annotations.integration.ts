@@ -43,7 +43,7 @@ export async function runAnnotationChecks(win: Window): Promise<string[]> {
     const button = (name: string) => { const node = Array.from(overlay.querySelectorAll<NativeButton>('button')).find(n => n.getAttribute('label') === name); if (!node) throw new Error(`Missing button ${name}`); return node; };
     check('annotation mode toggle is absent', !overlay.querySelector('.zar-annotation-mode'));
     const draft = find<NativeEditable>('.zar-input'); draft.focus(); const input = draft.ref!;
-    input.value = 'Highlight the core mechanism'; input.dispatchEvent(new realm.Event('input', { bubbles: true }));
+    input.value = '我需要的是你直接在pdf上面进行批注，用蓝色下划线，然后标注对应的解释'; input.dispatchEvent(new realm.Event('input', { bubbles: true }));
     button('Send').doCommand();
     await until('annotation preview is shown', () => !!overlay.querySelector('.zar-annotation-card'));
     check('planning writes nothing and skips normal chat', planned === 1 && writes === 0 && ordinary === 0);
@@ -55,12 +55,12 @@ export async function runAnnotationChecks(win: Window): Promise<string[]> {
     check('annotation card and comment fit a narrow sidebar', card.scrollWidth <= card.clientWidth + 1 && card.textContent?.includes('coordinates work'));
     find<HTMLButtonElement>('.zar-message-assistant .zar-message-copy').click();
     check('copy includes proposed quotation and comment', copies[0]?.includes(plan.items[0].quote) && copies[0]?.includes(plan.items[0].comment));
-    button('Save selected annotations').doCommand();
+    button('Save to PDF').doCommand();
     await until('save records receipts in conversation history', () => !!conversation.messages[1].annotationPlan?.receipts.length);
     check('saved candidate is disabled', find<HTMLInputElement>('.zar-annotation-choice input').disabled && writes === 1);
     button('Undo this batch').doCommand();
     await until('undo state is recorded', () => !!conversation.messages[1].annotationPlan?.undone);
-    check('undo applies only to the preview batch', undos === 1 && button('Save selected annotations').disabled);
+    check('undo applies only to the preview batch', undos === 1 && button('Save to PDF').disabled);
     await service.saveConfig({ ...config, language: 'zh-CN' }); await pause();
     check('annotation preview labels switch to Chinese', overlay.textContent?.includes('标注预览') || overlay.textContent?.includes('本批标注已撤销'));
     service.setDraft(conversation.id, 'Follow-up question'); await pause(); button('发送').doCommand();

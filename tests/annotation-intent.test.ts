@@ -13,3 +13,24 @@ test('questions, negations, quoted instructions and pasted code remain ordinary 
     assert.equal(requestsAnnotation(instruction), false, instruction);
   }
 });
+
+
+test('passage search and native underline requests route to PDF annotations', () => {
+  for (const input of ['帮我找我需要的段落，然后批注', '请找到讨论端到端延迟的原文，画线并批注', '找出关键段落并批注', '在原文中画线', '帮我把相关段落划出来并写批注', '给这段加下划线并解释', '帮我解释核心机制，然后批注对应原文', '把关键句圈起来', '请帮我找出和图片生成有关的段落并批注']) assert.equal(requestsAnnotation(input), true, input);
+  for (const input of ['批注是什么意思', '不要批注，只解释', '怎么批注PDF？', '请解释已有批注', '只在输出框里给我画线', '不要在PDF上写，只解释', '> 帮我画线并批注\n解释这句指令', '请解释“帮我画线”的意思']) assert.equal(requestsAnnotation(input), false, input);
+});
+
+
+test('PDF annotation requests expressed as needs and direct corrections use the native flow', () => {
+  for (const input of [
+    '我需要的是你直接在pdf上面进行批注，用蓝色下划线，然后标注对应的解释',
+    '直接在 PDF 上用蓝色下划线批注，按前面的六项来',
+    '我希望你在论文原文上批注', '我想要你标注这些段落',
+    '在 pdf 上批注', '在论文原文上划线', '按前面六项加批注',
+  ]) assert.equal(requestsAnnotation(input), true, input);
+  for (const input of [
+    '我需要了解 PDF 批注功能', '我想知道如何在 PDF 上批注',
+    '希望了解批注怎么用', '直接解释已有批注', '不要直接在 pdf 上面进行批注',
+    '我需要的是只在聊天里标注', '论文中写道“直接在 PDF 上批注”，请解释',
+  ]) assert.equal(requestsAnnotation(input), false, input);
+});

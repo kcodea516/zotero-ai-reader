@@ -1,7 +1,7 @@
 <h1 align="center">Zotero AI Reader</h1>
 
 <p align="center"><strong>Read papers and talk through them in Zotero.</strong><br />
-Ask about a passage, share a screenshot, or turn an idea into a diagram.</p>
+Understand a passage, annotate the PDF, or explore an idea with images.</p>
 
 <p align="center">
   <a href="#installation">Install</a> ·
@@ -53,7 +53,17 @@ You can attach a reference image and ask for a new image based on it. This uses 
 
 ### Annotate a paper · preview
 
-Ask the assistant to highlight or underline passages and add comments. It prepares a proposal for you to review; select the annotations you want and save them to the PDF. You can undo a saved batch. The current preview works with matching text passages, and supports up to eight proposed annotations per request.
+Ask for annotations in the conversation:
+
+> Find the passages about latency. Underline them in blue and add a comment explaining each one.
+
+AI Reader reads the current PDF, locates the passages, and shows a preview. Choose **Show passage** to check a match, then **Save to PDF**. The underlines and comments appear on the original pages and in Zotero's annotation sidebar. You can edit them in Zotero or undo the batch from the chat.
+
+You can also refer back to the discussion: “Annotate the passages for the six points we just listed.” The planner uses recent completed turns to understand the scope. Each request can propose up to eight highlights or underlines.
+
+<p align="center"><img src="docs/images/pdf-underlines.png" width="850" alt="Blue underlines marking the optimization objective in the original Nova PDF" /></p>
+
+*Blue underlines on the original PDF page, captured from Zotero. Comments stay attached to the marked passages and can be opened in the annotation sidebar.*
 
 ### Export a conversation · preview
 
@@ -61,7 +71,7 @@ Choose **Export** on the right of the **Tools** bar below the paper title, selec
 
 ## Installation
 
-The stable release includes paper Q&A, citations, library lookup, and history. Image input, image generation, annotation proposals, and conversation export are available in the [1.4.0-beta.12 preview release](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.4.0-beta.12).
+The stable release includes paper Q&A, citations, library lookup, and history. The latest preview source, **1.4.0-beta.14**, adds image input, image generation, native PDF annotations, and conversation export. Get the XPI from a successful [preview CI build](https://github.com/kcodea516/zotero-ai-reader/actions/workflows/ci.yml?query=branch%3Acodex%2Fannotation-agent-preview) under **Artifacts → zotero-ai-reader-xpi**, or [build it locally](#build-from-source). GitHub requires sign-in to download CI artifacts. The older [beta.12 release](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.4.0-beta.12) is still available, but lacks the latest annotation fixes.
 
 1. Download `zotero-ai-reader-1.3.2.xpi` from the [stable release](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.2).
 2. In Zotero, open **Tools → Plugins**, then choose **Install Plugin From File** from the gear menu.
@@ -97,13 +107,14 @@ Choose the interface language, default model, system prompt, and message color h
 
 ## Stable and preview
 
-| Feature | Stable 1.3.2 | Preview 1.4.0-beta.12 |
+| Feature | Stable 1.3.2 | Preview 1.4.0-beta.14 |
 | --- | --- | --- |
 | Paper Q&A, citations, library lookup, history | Yes | Yes |
 | Fold long user messages | — | Yes |
-| Propose PDF annotations | — | Experimental |
+| Underline or highlight PDF passages with comments | — | Yes, with a review step |
 | Image input, image generation, and viewer | — | Yes |
-| Install | [Release XPI](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.2) | [Preview XPI](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.4.0-beta.12) |
+| Export conversations as Markdown, TXT, or PDF | — | Yes |
+| Install | [Release XPI](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.2) | [CI build](https://github.com/kcodea516/zotero-ai-reader/actions/workflows/ci.yml?query=branch%3Acodex%2Fannotation-agent-preview) · [Build locally](#build-from-source) |
 
 The preview's text annotations are matched against PDF coordinates before saving. Ambiguous or unmatched passages cannot be saved, and editing an annotation blocks undo of its batch. The preview reads up to 80 pages and 110,000 characters for an annotation proposal. Its [validation record](https://github.com/kcodea516/zotero-ai-reader/blob/codex/annotation-agent-preview/VALIDATION.md) describes the tests run so far.
 

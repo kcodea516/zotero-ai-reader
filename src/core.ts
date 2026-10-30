@@ -273,7 +273,7 @@ export class ChatService {
     if (conversation.draftImages) checkInputImages(conversation.draftImages);
     const now = Date.now();
     const requestId = uuid();
-    const user: Message = { id: uuid(), role: 'user', content, inputImages: conversation.draftImages?.length ? clone(conversation.draftImages) : undefined, intent: intent ?? (requestsImage(content) ? 'image' : requestsAnnotation(content) ? 'annotate' : undefined), quote: conversation.quote ? clone(conversation.quote) : undefined, createdAt: now, status: 'complete', requestId };
+    const user: Message = { id: uuid(), role: 'user', content, inputImages: conversation.draftImages?.length ? clone(conversation.draftImages) : undefined, intent: intent ?? (requestsAnnotation(content) ? 'annotate' : requestsImage(content) ? 'image' : undefined), quote: conversation.quote ? clone(conversation.quote) : undefined, createdAt: now, status: 'complete', requestId };
     const assistant: Message = { id: uuid(), role: 'assistant', content: '', createdAt: now, status: 'streaming', requestId };
     conversation.messages.push(user, assistant);
     conversation.draft = '';
@@ -361,6 +361,14 @@ export class ChatService {
     }
     messages.push({ role: 'user', content: userContent(user), ...(user.inputImages?.length ? {images: clone(user.inputImages)} : {}) });
     const previousQuestions = conversation.messages.slice(0, userIndex).filter(message => message.role === 'user').slice(-3).map(message => message.content || message.quote?.text || '');
+    // Completed turns resolve references such as "the six points above". They do
+    // not authorize actions; routing still uses only the current user message.
+    let contextBudget = 18000;
+    const recentConversation = messages.slice(1, -1).slice(-6).reverse().map(message => {
+      const content = message.content.slice(0, Math.min(6000, contextBudget));
+      contextBudget -= content.length;
+      return { role: message.role as 'user' | 'assistant', content };
+    }).filter(message => message.content).reverse();
     const questionSnapshot = user.content || user.quote?.text || (user.inputImages?.length ? '请描述并解释所附图片。' : '请解释这段文献。');
     let preparingContext = false;
     const execute = async () => {
@@ -396,7 +404,7 @@ export class ChatService {
         if (user.intent === 'annotate') {
           if (!this.annotationPlanner) throw bilingualError('当前环境不支持标注 Agent。', 'The annotation agent is unavailable in this environment.');
           if (!readingSnapshot.currentPaper) throw bilingualError('标注需要读取当前 PDF，请先开启“读取原文”。', 'Annotations require reading the current PDF. Enable Read paper first.');
-          const plan = await abortable(this.annotationPlanner({ scope: scopeSnapshot, instruction: questionSnapshot, quote: user.quote, previousQuestions,
+          const plan = await abortable(this.annotationPlanner({ scope: scopeSnapshot, instruction: questionSnapshot, quote: user.quote, previousQuestions, recentConversation,
             language, signal: controller.signal, endpoint: endpointSnapshot, model: modelSnapshot, key, transport: this.transport,
             onNotice: text => { if (!controller.signal.aborted) { assistant.contextNotice = text; this.changed(); } },
           }), controller.signal);
@@ -404,7 +412,7 @@ export class ChatService {
           if (!isAnnotationPlan(plan) || plan.scope.libraryID !== scopeSnapshot.libraryID || plan.scope.itemKey !== scopeSnapshot.itemKey) throw bilingualError('标注方案与当前文献不匹配，请重试。', 'The annotation plan does not match this paper. Retry.');
           assistant.annotationPlan = clone(plan);
           const count = plan.items.filter(item => item.status === 'ready').length;
-          assistant.content = tr(language, `已定位 ${count} 处原文。请在下方核对原句和注释，选择后写入 Zotero。`, `${count} passages located. Review the quotations and comments below, then select which to save in Zotero.`);
+          assistant.content = tr(language, `已定位 ${count} 处原文。下方是待写入 PDF 的划线/高亮与批注。核对后点击“写入 PDF 标注”，即可显示在论文原文中。`, `${count} passages located. Review the passages and comments below, then choose Save to PDF to add native annotations to the paper.`);
           assistant.contextNotice = plan.warning;
           assistant.sources = plan.items.length ? [{ id: 'S1', title: scopeSnapshot.title, libraryID: scopeSnapshot.libraryID, itemKey: scopeSnapshot.itemKey, attachmentKey: plan.attachmentKey,
             pages: [...new Set(plan.items.map(item => item.page))], totalPages: plan.totalPages, truncated: true }] : undefined;
