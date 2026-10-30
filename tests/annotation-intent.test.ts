@@ -34,3 +34,24 @@ test('PDF annotation requests expressed as needs and direct corrections use the 
     '我需要的是只在聊天里标注', '论文中写道“直接在 PDF 上批注”，请解释',
   ]) assert.equal(requestsAnnotation(input), false, input);
 });
+
+
+test('colloquial passage marking and common dictation variants enter annotation flow', () => {
+  for (const input of [
+    '用绿色把实验这一部分给我圈花出来我看',
+    '请解释实验并圈画对应的段落', '解释这一段并且用绿色圈花原文',
+    '把这一部分圈化出来', '把关键句圈划出来',
+    '给我把原文提及到的给我画出来我看看',
+    '请用绿色把这段画出来', '把实验这一部分圈出来并解释',
+    'Explain the experiment, then highlight the relevant passages in green.',
+  ]) assert.equal(requestsAnnotation(input), true, input);
+  for (const input of [
+    '不要用绿色把实验这一部分给我圈花出来',
+    '不用把这段圈化出来', '请解释圈花是什么意思',
+    '怎么把实验这一部分圈花出来？',
+    '只在聊天里把原文圈花出来',
+    '> 用绿色把实验这一部分给我圈花出来我看\n解释这句话',
+    '文中说“把这一部分圈化出来”，这是什么意思？',
+    '帮我画出来一个流程图', '根据原文画出架构图', '请把实验曲线画出来',
+  ]) assert.equal(requestsAnnotation(input), false, input);
+});

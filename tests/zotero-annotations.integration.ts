@@ -43,7 +43,7 @@ export async function runAnnotationChecks(win: Window): Promise<string[]> {
     const button = (name: string) => { const node = Array.from(overlay.querySelectorAll<NativeButton>('button')).find(n => n.getAttribute('label') === name); if (!node) throw new Error(`Missing button ${name}`); return node; };
     check('annotation mode toggle is absent', !overlay.querySelector('.zar-annotation-mode'));
     const draft = find<NativeEditable>('.zar-input'); draft.focus(); const input = draft.ref!;
-    input.value = '我需要的是你直接在pdf上面进行批注，用蓝色下划线，然后标注对应的解释'; input.dispatchEvent(new realm.Event('input', { bubbles: true }));
+    input.value = '用绿色把实验这一部分给我圈花出来我看'; input.dispatchEvent(new realm.Event('input', { bubbles: true }));
     button('Send').doCommand();
     await until('annotation preview is shown', () => !!overlay.querySelector('.zar-annotation-card'));
     check('planning writes nothing and skips normal chat', planned === 1 && writes === 0 && ordinary === 0);

@@ -1,7 +1,7 @@
 <h1 align="center">Zotero AI Reader</h1>
 
-<p align="center"><strong>Read papers and talk through them in Zotero.</strong><br />
-Understand a passage, annotate the PDF, or explore an idea with images.</p>
+<p align="center"><strong>Your paper and your AI, in one window.</strong><br />
+A lightweight, native sidebar for understanding and annotating what you read.</p>
 
 <p align="center">
   <a href="#installation">Install</a> ·
@@ -18,12 +18,11 @@ Understand a passage, annotate the PDF, or explore an idea with images.</p>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/kcodea516/zotero-ai-reader?color=555" alt="MIT license" /></a>
 </p>
 
-AI Reader adds a chat panel to Zotero's PDF reader. Ask it to explain a method, follow up on an unfamiliar term, or compare a paper with another one in your library. Page links take you back to the PDF, so you can check the source as you read.
+Keep the paper open and ask your question beside it. AI Reader lives in Zotero's PDF reader, so you can work through an unfamiliar method without copying passages into a browser chat or switching between windows.
 
-Bring your own OpenAI-compatible API and choose English or Chinese for the interface. The preview also accepts screenshots and can generate images through a compatible Images API.
+When an explanation helps, ask the assistant to mark the relevant passages and attach comments. The marks stay on the PDF, ready for your next reading session. You can review them, save them, and undo the batch from the same conversation.
 
-<p align="center"><img src="docs/images/reading-sidebar.png" width="420" alt="Zotero AI Reader sidebar with a paper discussion and links to PDF pages" /></p>
-<p align="center"><sub>A paper conversation in Zotero's native sidebar.</sub></p>
+The plugin uses Zotero's native controls and your own OpenAI-compatible API. Install one XPI and connect your model. The interface supports English and Chinese.
 
 ## Reading with AI Reader
 
@@ -51,19 +50,21 @@ Open an SVG diagram to play its animation and click its controls. The viewer has
 
 You can attach a reference image and ask for a new image based on it. This uses your provider's Images Edit API. Image generation requires a provider and model that support the corresponding Images API; provider charges may apply.
 
-### Annotate a paper · preview
+### Ask, mark, and return to the paper · preview
 
-Ask for annotations in the conversation:
+> Highlight the experimental output length in green and explain what it means.
 
-> Find the passages about latency. Underline them in blue and add a comment explaining each one.
+The assistant finds the passage in the current PDF and prepares a comment. **Show passage** takes you to the sentence; **Save to PDF** puts the mark on the page.
 
-AI Reader reads the current PDF, locates the passages, and shows a preview. Choose **Show passage** to check a match, then **Save to PDF**. The underlines and comments appear on the original pages and in Zotero's annotation sidebar. You can edit them in Zotero or undo the batch from the chat.
+<p align="center"><img src="docs/images/annotation-request.jpg" width="1100" alt="English chat requesting a green highlight, with the PDF open beside the annotation preview and Save to PDF button" /></p>
 
-You can also refer back to the discussion: “Annotate the passages for the six points we just listed.” The planner uses recent completed turns to understand the scope. Each request can propose up to eight highlights or underlines.
+After saving, the green highlight appears in the paper. The chat keeps the explanation and an **Undo this batch** button, so you can remove those marks together if you change your mind.
 
-<p align="center"><img src="docs/images/pdf-underlines.png" width="850" alt="Blue underlines marking the optimization objective in the original Nova PDF" /></p>
+<p align="center"><img src="docs/images/annotation-saved.jpg" width="1100" alt="Green highlight on the PDF beside the saved annotation and Undo this batch button in the English conversation" /></p>
 
-*Blue underlines on the original PDF page, captured from Zotero. Comments stay attached to the marked passages and can be opened in the annotation sidebar.*
+*Captured in Zotero using a separate copy of the paper and a scripted model response. Passage matching, PDF annotations, and the save and undo controls are real.*
+
+You can ask for highlights or underlines, choose a color, and refer to your earlier discussion: "Annotate the passages for the points we just listed." Each request can propose up to eight passages. Comments remain editable in Zotero's annotation sidebar.
 
 ### Export a conversation · preview
 
@@ -71,7 +72,7 @@ Choose **Export** on the right of the **Tools** bar below the paper title, selec
 
 ## Installation
 
-The stable release includes paper Q&A, citations, library lookup, and history. The latest preview source, **1.4.0-beta.14**, adds image input, image generation, native PDF annotations, and conversation export. Get the XPI from a successful [preview CI build](https://github.com/kcodea516/zotero-ai-reader/actions/workflows/ci.yml?query=branch%3Acodex%2Fannotation-agent-preview) under **Artifacts → zotero-ai-reader-xpi**, or [build it locally](#build-from-source). GitHub requires sign-in to download CI artifacts. The older [beta.12 release](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.4.0-beta.12) is still available, but lacks the latest annotation fixes.
+The stable release includes paper Q&A, citations, library lookup, and history. The latest preview source, **1.4.0-beta.15**, adds image input, image generation, native PDF annotations, and conversation export. Get the XPI from a successful [preview CI build](https://github.com/kcodea516/zotero-ai-reader/actions/workflows/ci.yml?query=branch%3Acodex%2Fannotation-agent-preview) under **Artifacts → zotero-ai-reader-xpi**, or [build it locally](#build-from-source). GitHub requires sign-in to download CI artifacts. The older [beta.12 release](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.4.0-beta.12) is still available, but lacks the latest annotation fixes.
 
 1. Download `zotero-ai-reader-1.3.2.xpi` from the [stable release](https://github.com/kcodea516/zotero-ai-reader/releases/tag/v1.3.2).
 2. In Zotero, open **Tools → Plugins**, then choose **Install Plugin From File** from the gear menu.
@@ -107,7 +108,7 @@ Choose the interface language, default model, system prompt, and message color h
 
 ## Stable and preview
 
-| Feature | Stable 1.3.2 | Preview 1.4.0-beta.14 |
+| Feature | Stable 1.3.2 | Preview 1.4.0-beta.15 |
 | --- | --- | --- |
 | Paper Q&A, citations, library lookup, history | Yes | Yes |
 | Fold long user messages | — | Yes |

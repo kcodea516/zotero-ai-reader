@@ -412,7 +412,7 @@ export class ChatService {
           if (!isAnnotationPlan(plan) || plan.scope.libraryID !== scopeSnapshot.libraryID || plan.scope.itemKey !== scopeSnapshot.itemKey) throw bilingualError('标注方案与当前文献不匹配，请重试。', 'The annotation plan does not match this paper. Retry.');
           assistant.annotationPlan = clone(plan);
           const count = plan.items.filter(item => item.status === 'ready').length;
-          assistant.content = tr(language, `已定位 ${count} 处原文。下方是待写入 PDF 的划线/高亮与批注。核对后点击“写入 PDF 标注”，即可显示在论文原文中。`, `${count} passages located. Review the passages and comments below, then choose Save to PDF to add native annotations to the paper.`);
+          assistant.content = tr(language, `已定位 ${count} 处原文。下方是待写入 PDF 的划线/高亮与批注。核对后点击“写入 PDF 标注”，即可显示在论文原文中。`, `${count} ${count === 1 ? 'passage' : 'passages'} located. Review the comments, then choose Save to PDF.`);
           assistant.contextNotice = plan.warning;
           assistant.sources = plan.items.length ? [{ id: 'S1', title: scopeSnapshot.title, libraryID: scopeSnapshot.libraryID, itemKey: scopeSnapshot.itemKey, attachmentKey: plan.attachmentKey,
             pages: [...new Set(plan.items.map(item => item.page))], totalPages: plan.totalPages, truncated: true }] : undefined;

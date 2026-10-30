@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Zotero AI Reader",
-  "version": "1.4.0-beta.14",
+  "version": "1.4.0-beta.15",
   "description": "A bilingual Zotero sidebar assistant with paper context, on-demand library lookup, and PDF citations.",
   "author": "kcodea516 and contributors",
   "icons": {

@@ -1,5 +1,13 @@
 # 验证记录
 
+## Colloquial annotation requests: 1.4.0-beta.15
+
+On 2026-10-30, the reported request containing 圈花 was traced to the local annotation-command recognizer. It now normalizes common dictation variants of 圈画 and recognizes source-passage drawing requests, including requests combined with an explanation. Negative, quoted, and diagram-generation requests have regression coverage. TypeScript checks and all 138 automated tests passed.
+
+The installed beta.15 passed 17 native sidebar checks using the exact reported request. An English documentation fixture used a separate copy of Nova, an isolated conversation, and a scripted model response. The real adapter located the output-length sentence on PDF page 9. Clicking Save to PDF produced a green native highlight and an attached English comment; the chat displayed Saved and Undo this batch. Clicking Undo this batch removed the visible highlight and changed the chat to its undone state. No live model request was sent, and the user's original annotations were not edited.
+
+The README screenshots show this request and save sequence in the actual Zotero window. They are cropped native captures, not generated images. The example document was moved to Trash, its tab closed, and the original reader tab and sidebar width restored. The reproducible fixture is `scripts/annotation-showcase.ts`.
+
 ## Annotation README screenshots
 
 On 2026-10-30, the README gained an English-only crop from a native Zotero screenshot showing blue underlines on a paragraph in Nova. The crop excludes chat history, endpoint settings, and Chinese interface text. No annotation was changed to take these screenshots.

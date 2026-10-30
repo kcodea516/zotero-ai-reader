@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.0-beta.15 (preview)
+
+- Recognize colloquial Chinese passage-marking requests, including common dictation variants of 圈画 and requests to mark source passages while explaining them.
+- Keep diagram requests, quoted instructions, and requests not to annotate on the ordinary chat path.
+- Show the English annotation workflow in the README, from the chat request to PDF highlights and the batch undo control.
+
 ## 1.4.0-beta.14 (preview)
 
 - Recognize direct PDF annotation requests expressed as needs or corrections, including lowercase `pdf` and spaces around the name.
